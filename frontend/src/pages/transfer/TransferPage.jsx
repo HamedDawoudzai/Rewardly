@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useContext } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { getUser } from '@/utils/auth'
-import { userAPI } from '@/api/api'
 import { transactionAPI } from '@/api/transactions'
 import { Send, User, Coins, AlertCircle, CheckCircle } from 'lucide-react'
+import { AuthContext } from '@/context/AuthContext'
 
 const TransferPage = () => {
-  const [user, setUser] = useState(getUser())
+  const { user, refreshUser } = useContext(AuthContext)
   const [formData, setFormData] = useState({
     recipientId: '',
     amount: '',
@@ -18,20 +17,6 @@ const TransferPage = () => {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [transferResult, setTransferResult] = useState(null)
-
-  useEffect(() => {
-    // Refresh user data to get accurate points balance
-    loadUserData()
-  }, [])
-
-  const loadUserData = async () => {
-    try {
-      const profile = await userAPI.getProfile()
-      setUser(profile)
-    } catch (err) {
-      console.error('Failed to load user data:', err)
-    }
-  }
 
   const availablePoints = user?.points || 0
 
@@ -64,8 +49,8 @@ const TransferPage = () => {
       const result = await transactionAPI.transferPoints(recipientId, amount, formData.remark)
       setTransferResult(result)
       setSuccess(true)
-      // Refresh user data to update points balance
-      loadUserData()
+      // Refresh user data to update points balance in navbar
+      await refreshUser()
     } catch (err) {
       console.error('Transfer error:', err)
       setError(err.message || 'Transfer failed. Please check the recipient ID and try again.')

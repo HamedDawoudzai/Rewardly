@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { PageHeader } from '@/components/layout'
 import { StatsCard } from '@/components/shared'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,15 +13,14 @@ import {
   QrCode,
   Send
 } from 'lucide-react'
-import { getUser } from '@/utils/auth'
-import { userAPI } from '@/api/api'
 import { transactionAPI } from '@/api/transactions'
+import { AuthContext } from '@/context/AuthContext'
 
 // Mock data for events (Package 3 will replace this)
 import { mockUpcomingEvents } from '@/mock'
 
 const Dashboard = () => {
-  const [user, setUser] = useState(getUser())
+  const { user, refreshUser } = useContext(AuthContext)
   const [loading, setLoading] = useState(true)
   const [recentTransactions, setRecentTransactions] = useState([])
   const [upcomingEvents, setUpcomingEvents] = useState([])
@@ -39,12 +38,11 @@ const Dashboard = () => {
   const loadDashboardData = async () => {
     setLoading(true)
     try {
-      // Fetch fresh user profile for accurate points
-      const userProfile = await userAPI.getProfile()
-      setUser(userProfile)
+      // Refresh user data for accurate points (this updates the navbar too)
+      await refreshUser()
 
       // Fetch user's transactions
-      const transactionsResponse = await transactionAPI.getMyTransactions({ limit: 5 })
+      const transactionsResponse = await transactionAPI.getMyTransactions({ limit: 10 })
       const transactions = transactionsResponse.results || transactionsResponse || []
       
       // Format transactions for display
@@ -69,7 +67,7 @@ const Dashboard = () => {
       ).length
 
       setStats({
-        points: userProfile.points || 0,
+        points: user?.points || 0,
         pendingRedemptions,
         transactionsThisMonth: thisMonth.length,
         upcomingEvents: mockUpcomingEvents.length // TODO: Replace with real events API (Package 3)
@@ -120,7 +118,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatsCard
           title="Available Points"
-          value={stats.points.toLocaleString()}
+          value={(user?.points || 0).toLocaleString()}
           icon={Coins}
           variant="primary"
         />

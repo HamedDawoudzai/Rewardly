@@ -1,16 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { QRCodeDisplay } from '@/components/shared'
-import { getUser } from '@/utils/auth'
-import { userAPI } from '@/api/api'
 import { transactionAPI } from '@/api/transactions'
 import { Gift, Coins, AlertCircle, CheckCircle, QrCode, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { AuthContext } from '@/context/AuthContext'
 
 const RedeemPage = () => {
-  const [user, setUser] = useState(getUser())
+  const { user, refreshUser } = useContext(AuthContext)
   const [amount, setAmount] = useState('')
   const [remark, setRemark] = useState('')
   const [loading, setLoading] = useState(false)
@@ -21,21 +20,8 @@ const RedeemPage = () => {
   const [loadingPending, setLoadingPending] = useState(true)
 
   useEffect(() => {
-    loadData()
+    loadPendingRedemptions()
   }, [])
-
-  const loadData = async () => {
-    try {
-      // Refresh user data for accurate points
-      const profile = await userAPI.getProfile()
-      setUser(profile)
-      
-      // Load pending redemptions
-      await loadPendingRedemptions()
-    } catch (err) {
-      console.error('Failed to load data:', err)
-    }
-  }
 
   const loadPendingRedemptions = async () => {
     setLoadingPending(true)
@@ -79,8 +65,10 @@ const RedeemPage = () => {
       const result = await transactionAPI.createRedemption(redemptionAmount, remark)
       setRedemptionResult(result)
       setSuccess(true)
-      // Refresh data to update points and pending list
-      loadData()
+      // Refresh user data to update points balance in navbar
+      await refreshUser()
+      // Refresh pending redemptions list
+      loadPendingRedemptions()
     } catch (err) {
       console.error('Redemption error:', err)
       setError(err.message || 'Redemption request failed')

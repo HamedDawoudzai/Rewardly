@@ -1,14 +1,15 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { User, LogOut, Settings, ChevronDown } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useContext } from 'react'
 import rewardlyLogo from '@/assets/rewardly_cropped.png'
-import { clearAuth, getUser } from '@/utils/auth'
+import { clearAuth } from '@/utils/auth'
+import { AuthContext } from '@/context/AuthContext'
 
 const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const dropdownRef = useRef(null)
   const navigate = useNavigate()
-  const user = getUser()
+  const { user } = useContext(AuthContext)
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -115,4 +116,3 @@ const Navbar = () => {
 }
 
 export default Navbar
-
