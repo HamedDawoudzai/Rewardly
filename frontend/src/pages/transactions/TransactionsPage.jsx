@@ -124,11 +124,20 @@ const TransactionsPage = () => {
     {
       key: 'createdAt',
       label: 'Date',
-      render: (value) => (
-        <span className="text-gray-500 text-sm">
-          {new Date(value).toLocaleDateString()} {new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </span>
-      )
+      render: (value) => {
+        if (!value) return <span className="text-gray-400 text-sm">—</span>
+        try {
+          const date = new Date(value)
+          if (isNaN(date.getTime())) return <span className="text-gray-400 text-sm">—</span>
+          return (
+            <span className="text-gray-500 text-sm">
+              {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )
+        } catch {
+          return <span className="text-gray-400 text-sm">—</span>
+        }
+      }
     },
     {
       key: 'actions',
@@ -151,7 +160,10 @@ const TransactionsPage = () => {
         <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
         <select
           value={filters.type}
-          onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+          onChange={(e) => {
+            setFilters({ ...filters, type: e.target.value })
+            setCurrentPage(1)
+          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm"
         >
           <option value="">All Types</option>

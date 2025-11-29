@@ -150,7 +150,16 @@ async function getMyTransactionsHandler(req, res) {
       return res.status(404).json({ error: 'Account not found' });
     }
 
+    // Parse filter parameters from query string
     const filters = {};
+    if (req.query.type) filters.type = req.query.type;
+    if (req.query.relatedId) filters.relatedId = req.query.relatedId;
+    if (req.query.promotionId) filters.promotionId = req.query.promotionId;
+    if (req.query.amount) {
+      filters.amount = req.query.amount;
+      filters.operator = req.query.operator || 'gte';
+    }
+    
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
