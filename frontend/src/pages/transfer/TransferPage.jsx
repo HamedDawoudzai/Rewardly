@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, useContext } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { getUser } from '@/utils/auth'
+import { transactionAPI } from '@/api/transactions'
 import { Send, User, Coins, AlertCircle, CheckCircle } from 'lucide-react'
+import { AuthContext } from '@/context/AuthContext'
 
 const TransferPage = () => {
-  const user = getUser()
+  const { user, refreshUser } = useContext(AuthContext)
   const [formData, setFormData] = useState({
     recipientId: '',
     amount: '',
@@ -15,8 +16,9 @@ const TransferPage = () => {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [transferResult, setTransferResult] = useState(null)
 
-  const availablePoints = user?.points || 1250
+  const availablePoints = user?.points || 0
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -24,9 +26,11 @@ const TransferPage = () => {
     setLoading(true)
 
     // Validation
+    const recipientId = parseInt(formData.recipientId)
     const amount = parseInt(formData.amount)
-    if (!formData.recipientId.trim()) {
-      setError('Please enter a recipient UTORid')
+    
+    if (!recipientId || isNaN(recipientId)) {
+      setError('Please enter a valid recipient User ID')
       setLoading(false)
       return
     }
@@ -42,11 +46,14 @@ const TransferPage = () => {
     }
 
     try {
-      // TODO: API call to transfer points
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      const result = await transactionAPI.transferPoints(recipientId, amount, formData.remark)
+      setTransferResult(result)
       setSuccess(true)
+      // Refresh user data to update points balance in navbar
+      await refreshUser()
     } catch (err) {
-      setError(err.message || 'Transfer failed')
+      console.error('Transfer error:', err)
+      setError(err.message || 'Transfer failed. Please check the recipient ID and try again.')
     } finally {
       setLoading(false)
     }
@@ -56,6 +63,7 @@ const TransferPage = () => {
     setFormData({ recipientId: '', amount: '', remark: '' })
     setSuccess(false)
     setError('')
+    setTransferResult(null)
   }
 
   return (
@@ -89,9 +97,14 @@ const TransferPage = () => {
                   <CheckCircle className="h-8 w-8 text-green-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Transfer Complete!</h3>
-                <p className="text-gray-600 mb-6">
-                  Successfully sent {formData.amount} points to {formData.recipientId}
+                <p className="text-gray-600 mb-2">
+                  Successfully sent {formData.amount} points
                 </p>
+                {transferResult && (
+                  <p className="text-sm text-gray-500 mb-6">
+                    Transaction ID: #{transferResult.id}
+                  </p>
+                )}
                 <Button onClick={handleReset}>
                   Make Another Transfer
                 </Button>
@@ -108,18 +121,19 @@ const TransferPage = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <User className="h-4 w-4 inline mr-1" />
-                    Recipient UTORid
+                    Recipient User ID
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     value={formData.recipientId}
                     onChange={(e) => setFormData({ ...formData, recipientId: e.target.value })}
-                    placeholder="Enter recipient's UTORid"
+                    placeholder="Enter recipient's User ID"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
                     disabled={loading}
+                    min="1"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    You can scan a QR code or manually enter the UTORid
+                    Get the User ID by scanning their QR code
                   </p>
                 </div>
 
@@ -177,4 +191,3 @@ const TransferPage = () => {
 }
 
 export default TransferPage
-

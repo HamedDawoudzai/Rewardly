@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { PageHeader } from '@/components/layout'
 import { StatsCard } from '@/components/shared'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,50 +13,110 @@ import {
   QrCode,
   Send
 } from 'lucide-react'
-import { getUser } from '@/utils/auth'
+import { transactionAPI } from '@/api/transactions'
+import { AuthContext } from '@/context/AuthContext'
 
-// ============================================================
-// TODO: Replace mock data imports with API calls
-// ============================================================
-import { 
-  mockDashboardStats, 
-  mockRecentTransactions, 
-  mockUpcomingEvents,
-  simulateApiDelay 
-} from '@/mock'
+// Mock data for events (Package 3 will replace this)
+import { mockUpcomingEvents } from '@/mock'
 
 const Dashboard = () => {
-  const user = getUser()
+  const { user, refreshUser } = useContext(AuthContext)
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState(null)
   const [recentTransactions, setRecentTransactions] = useState([])
   const [upcomingEvents, setUpcomingEvents] = useState([])
+  const [stats, setStats] = useState({
+    points: 0,
+    pendingRedemptions: 0,
+    transactionsThisMonth: 0,
+    upcomingEvents: 0
+  })
 
   useEffect(() => {
     loadDashboardData()
   }, [])
 
-  // ============================================================
-  // TODO: Replace with actual API calls
-  // Example:
-  //   const statsResponse = await dashboardAPI.getStats()
-  //   const transactionsResponse = await transactionAPI.getRecent(3)
-  //   const eventsResponse = await eventAPI.getUpcoming(2)
-  // ============================================================
   const loadDashboardData = async () => {
     setLoading(true)
     try {
-      await simulateApiDelay(300) // Remove this when using real API
+      // Refresh user data for accurate points (this updates the navbar too)
+      const freshUser = await refreshUser()
+
+      // Fetch user's transactions
+      const transactionsResponse = await transactionAPI.getMyTransactions({ limit: 10 })
+      const transactions = transactionsResponse.results || transactionsResponse || []
       
-      // TODO: Replace these with actual API calls
-      setStats({
-        ...mockDashboardStats,
-        points: user?.points || mockDashboardStats.points
+      // Format transactions for display
+      const formattedTransactions = transactions.slice(0, 3).map(tx => {
+        // Handle different amount field names based on transaction type
+        let amount = tx.amount || 0
+        if (tx.type === 'transfer') {
+          // Transfer uses 'sent' field, and it's negative for the sender
+          amount = -(tx.sent || 0)
+        } else if (tx.type === 'redemption' && tx.redeemed) {
+          // Processed redemption uses 'redeemed'
+          amount = -(tx.redeemed || tx.amount || 0)
+        }
+        
+        // Format date - handle missing createdAt
+        let dateStr = 'Recent'
+        if (tx.createdAt) {
+          try {
+            const date = new Date(tx.createdAt)
+            if (!isNaN(date.getTime())) {
+              dateStr = date.toLocaleDateString()
+            }
+          } catch {
+            dateStr = 'Recent'
+          }
+        }
+        
+        return {
+          id: tx.id,
+          type: tx.type,
+          amount,
+          description: tx.remark || `${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} transaction`,
+          date: dateStr
+        }
       })
-      setRecentTransactions(mockRecentTransactions)
+      setRecentTransactions(formattedTransactions)
+
+      // Calculate stats from transactions
+      const now = new Date()
+      const currentMonth = now.getMonth()
+      const currentYear = now.getFullYear()
+      
+      const thisMonthCount = transactions.filter(tx => {
+        if (!tx.createdAt) return false
+        try {
+          const txDate = new Date(tx.createdAt)
+          if (isNaN(txDate.getTime())) return false
+          return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear
+        } catch {
+          return false
+        }
+      }).length
+      
+      const pendingRedemptions = transactions.filter(
+        tx => tx.type === 'redemption' && !tx.processedAt && !tx.redeemed
+      ).length
+
+      setStats({
+        points: freshUser?.points || user?.points || 0,
+        pendingRedemptions,
+        transactionsThisMonth: thisMonthCount,
+        upcomingEvents: mockUpcomingEvents.length // TODO: Replace with real events API (Package 3)
+      })
+
+      // TODO: Replace with real events API (Package 3)
       setUpcomingEvents(mockUpcomingEvents)
+
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
+      // Fallback to cached user data
+      setStats(prev => ({
+        ...prev,
+        points: user?.points || 0
+      }))
     } finally {
       setLoading(false)
     }
@@ -92,27 +152,25 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatsCard
           title="Available Points"
-          value={stats?.points?.toLocaleString() || 0}
+          value={(user?.points || 0).toLocaleString()}
           icon={Coins}
           variant="primary"
-          trend="up"
-          trendValue="+12% this month"
         />
         <StatsCard
           title="Pending Redemptions"
-          value={stats?.pendingRedemptions || 0}
+          value={stats.pendingRedemptions}
           icon={Gift}
           subtitle="Awaiting processing"
         />
         <StatsCard
           title="Transactions"
-          value={stats?.transactionsThisMonth || 0}
+          value={stats.transactionsThisMonth}
           icon={Receipt}
           subtitle="This month"
         />
         <StatsCard
           title="Upcoming Events"
-          value={stats?.upcomingEvents || 0}
+          value={stats.upcomingEvents}
           icon={Calendar}
           subtitle="RSVP'd events"
         />
@@ -182,24 +240,28 @@ const Dashboard = () => {
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentTransactions.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getTransactionColor(tx.type)}`}>
-                      {tx.type}
-                    </span>
-                    <div>
-                      <p className="font-medium text-gray-900">{tx.description}</p>
-                      <p className="text-sm text-gray-500">{tx.date}</p>
+            {recentTransactions.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No transactions yet</p>
+            ) : (
+              <div className="space-y-4">
+                {recentTransactions.map((tx) => (
+                  <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getTransactionColor(tx.type)}`}>
+                        {tx.type}
+                      </span>
+                      <div>
+                        <p className="font-medium text-gray-900">{tx.description}</p>
+                        <p className="text-sm text-gray-500">{tx.date}</p>
+                      </div>
                     </div>
+                    <span className={`font-semibold ${tx.amount > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                      {tx.amount > 0 ? '+' : ''}{tx.amount} pts
+                    </span>
                   </div>
-                  <span className={`font-semibold ${tx.amount > 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                    {tx.amount > 0 ? '+' : ''}{tx.amount} pts
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -214,24 +276,28 @@ const Dashboard = () => {
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {upcomingEvents.map((event) => (
-                <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-purple-600" />
+            {upcomingEvents.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No upcoming events</p>
+            ) : (
+              <div className="space-y-4">
+                {upcomingEvents.map((event) => (
+                  <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                        <Calendar className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{event.name}</p>
+                        <p className="text-sm text-gray-500">{event.date}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{event.name}</p>
-                      <p className="text-sm text-gray-500">{event.date}</p>
-                    </div>
+                    <span className="text-sm font-medium text-rewardly-blue">
+                      +{event.points} pts
+                    </span>
                   </div>
-                  <span className="text-sm font-medium text-rewardly-blue">
-                    +{event.points} pts
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

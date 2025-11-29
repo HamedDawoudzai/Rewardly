@@ -353,6 +353,7 @@ function mapTransactionToResponse(transaction, context = 'get') {
     // Redemption has a special response format
     const isProcessed = transaction.status === 'posted';
     result.processedBy = transaction.cashier ? transaction.cashier.username : null;
+    result.processedAt = transaction.decidedAt || null;
     
     if (isProcessed) {
       // When processed show 'redeemed' instead of 'amount'
@@ -387,6 +388,7 @@ function mapTransactionToResponse(transaction, context = 'get') {
   }
   
   result.createdBy = transaction.createdBy ? transaction.createdBy.username : null;
+  result.createdAt = transaction.createdAt;
 
   return result;
 }
