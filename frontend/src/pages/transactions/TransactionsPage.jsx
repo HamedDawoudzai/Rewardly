@@ -4,16 +4,7 @@ import { DataTable } from '@/components/shared'
 import { Link } from 'react-router-dom'
 import { Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-
-// ============================================================
-// TODO: Replace mock data imports with API calls
-// ============================================================
-import { 
-  mockTransactions, 
-  getMockPaginatedData,
-  simulateApiDelay,
-  PAGINATION_DEFAULTS 
-} from '@/mock'
+import { transactionAPI } from '@/api/transactions'
 
 const TransactionsPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
@@ -29,38 +20,52 @@ const TransactionsPage = () => {
     operator: 'gte'
   })
 
+  const itemsPerPage = 10
+
   useEffect(() => {
     loadTransactions()
   }, [currentPage, filters])
 
-  // ============================================================
-  // TODO: Replace with actual API call
-  // Example:
-  //   const response = await transactionAPI.getUserTransactions({
-  //     page: currentPage,
-  //     limit: PAGINATION_DEFAULTS.itemsPerPage,
-  //     type: filters.type,
-  //     relatedId: filters.relatedId,
-  //     ...filters
-  //   })
-  // ============================================================
   const loadTransactions = async () => {
     setLoading(true)
     try {
-      await simulateApiDelay(300) // Remove this when using real API
+      // Build query params
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+      }
       
-      // TODO: Replace with actual API call
-      const { data, pagination } = getMockPaginatedData(
-        mockTransactions, 
-        currentPage, 
-        PAGINATION_DEFAULTS.itemsPerPage
-      )
+      if (filters.type) params.type = filters.type
+      if (filters.relatedId) params.relatedId = filters.relatedId
+      if (filters.promotionId) params.promotionId = filters.promotionId
+      if (filters.amount) {
+        params.amount = filters.amount
+        params.operator = filters.operator
+      }
+
+      const response = await transactionAPI.getMyTransactions(params)
       
-      setTransactions(data)
-      setTotalPages(pagination.totalPages)
-      setTotalItems(pagination.totalItems)
+      // Handle both paginated and non-paginated responses
+      const txList = response.results || response || []
+      const total = response.count || txList.length
+      
+      // Normalize transactions to have consistent 'amount' field
+      const normalizedTx = txList.map(tx => {
+        let amount = tx.amount || 0
+        if (tx.type === 'transfer') {
+          amount = -(tx.sent || 0)
+        } else if (tx.type === 'redemption' && tx.redeemed) {
+          amount = -(tx.redeemed || tx.amount || 0)
+        }
+        return { ...tx, amount }
+      })
+      
+      setTransactions(normalizedTx)
+      setTotalItems(total)
+      setTotalPages(Math.ceil(total / itemsPerPage))
     } catch (error) {
       console.error('Failed to load transactions:', error)
+      setTransactions([])
     } finally {
       setLoading(false)
     }
@@ -119,11 +124,20 @@ const TransactionsPage = () => {
     {
       key: 'createdAt',
       label: 'Date',
-      render: (value) => (
-        <span className="text-gray-500 text-sm">
-          {new Date(value).toLocaleDateString()} {new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </span>
-      )
+      render: (value) => {
+        if (!value) return <span className="text-gray-400 text-sm">—</span>
+        try {
+          const date = new Date(value)
+          if (isNaN(date.getTime())) return <span className="text-gray-400 text-sm">—</span>
+          return (
+            <span className="text-gray-500 text-sm">
+              {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )
+        } catch {
+          return <span className="text-gray-400 text-sm">—</span>
+        }
+      }
     },
     {
       key: 'actions',
@@ -146,7 +160,10 @@ const TransactionsPage = () => {
         <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
         <select
           value={filters.type}
-          onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+          onChange={(e) => {
+            setFilters({ ...filters, type: e.target.value })
+            setCurrentPage(1)
+          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm"
         >
           <option value="">All Types</option>
@@ -190,7 +207,10 @@ const TransactionsPage = () => {
       <div className="flex items-end">
         <Button 
           variant="outline" 
-          onClick={() => setFilters({ type: '', relatedId: '', promotionId: '', amount: '', operator: 'gte' })}
+          onClick={() => {
+            setFilters({ type: '', relatedId: '', promotionId: '', amount: '', operator: 'gte' })
+            setCurrentPage(1)
+          }}
           className="w-full"
         >
           Clear Filters
@@ -220,7 +240,7 @@ const TransactionsPage = () => {
         currentPage={currentPage}
         totalPages={totalPages}
         totalItems={totalItems}
-        itemsPerPage={PAGINATION_DEFAULTS.itemsPerPage}
+        itemsPerPage={itemsPerPage}
         onPageChange={setCurrentPage}
         filters={filterPanel}
         emptyMessage="No transactions found"

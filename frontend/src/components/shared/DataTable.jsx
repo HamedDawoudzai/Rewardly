@@ -1,5 +1,5 @@
 import { ArrowUpDown, ArrowUp, ArrowDown, Search, Filter, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import Pagination from './Pagination'
 
@@ -52,6 +52,65 @@ const DataTable = ({
       ? <ArrowUp className="h-4 w-4 text-rewardly-blue" />
       : <ArrowDown className="h-4 w-4 text-rewardly-blue" />
   }
+
+  // Client-side sorting when no onSort handler is provided
+  const sortedData = useMemo(() => {
+    // If there's an onSort callback, assume server-side sorting and don't sort locally
+    if (onSort || !sortConfig.key) {
+      return data
+    }
+
+    return [...data].sort((a, b) => {
+      const aValue = a[sortConfig.key]
+      const bValue = b[sortConfig.key]
+
+      // Handle null/undefined
+      if (aValue == null && bValue == null) return 0
+      if (aValue == null) return sortConfig.direction === 'asc' ? 1 : -1
+      if (bValue == null) return sortConfig.direction === 'asc' ? -1 : 1
+
+      // Handle dates
+      if (sortConfig.key === 'createdAt' || sortConfig.key.includes('At') || sortConfig.key.includes('date')) {
+        const aDate = new Date(aValue)
+        const bDate = new Date(bValue)
+        if (!isNaN(aDate) && !isNaN(bDate)) {
+          return sortConfig.direction === 'asc' 
+            ? aDate.getTime() - bDate.getTime() 
+            : bDate.getTime() - aDate.getTime()
+        }
+      }
+
+      // Handle numbers
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue
+      }
+
+      // Handle strings
+      const aStr = String(aValue).toLowerCase()
+      const bStr = String(bValue).toLowerCase()
+      if (aStr < bStr) return sortConfig.direction === 'asc' ? -1 : 1
+      if (aStr > bStr) return sortConfig.direction === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [data, sortConfig, onSort])
+
+  // Client-side search filtering when no onSearch handler is provided
+  const filteredData = useMemo(() => {
+    if (onSearch || !searchTerm.trim()) {
+      return sortedData
+    }
+
+    const term = searchTerm.toLowerCase()
+    return sortedData.filter(row => {
+      return columns.some(col => {
+        const value = row[col.key]
+        if (value == null) return false
+        return String(value).toLowerCase().includes(term)
+      })
+    })
+  }, [sortedData, searchTerm, columns, onSearch])
+
+  const displayData = filteredData
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -137,14 +196,14 @@ const DataTable = ({
                   </div>
                 </td>
               </tr>
-            ) : data.length === 0 ? (
+            ) : displayData.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-6 py-12 text-center text-gray-500">
                   {emptyMessage}
                 </td>
               </tr>
             ) : (
-              data.map((row, rowIndex) => (
+              displayData.map((row, rowIndex) => (
                 <tr 
                   key={row.id || rowIndex} 
                   className="hover:bg-gray-50 transition-colors"
@@ -178,4 +237,3 @@ const DataTable = ({
 }
 
 export default DataTable
-

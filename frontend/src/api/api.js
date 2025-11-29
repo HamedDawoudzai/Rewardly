@@ -4,8 +4,9 @@ const API_BASE_URL = import.meta.env.PROD ? 'http://localhost:3000' : '/api';
 
 /**
  * Base fetch wrapper with error handling
+ * Exported for use by other API modules
  */
-async function apiFetch(endpoint, options = {}) {
+export async function apiFetch(endpoint, options = {}) {
   const token = localStorage.getItem('authToken');
   
   const defaultHeaders = {

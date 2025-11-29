@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useCallback } from 'react'
-import { authAPI } from '@/api/api'
+import { authAPI, userAPI } from '@/api/api'
 import { saveAuth, getToken, getUser, clearAuth, isTokenExpired } from '@/utils/auth'
 
 export const AuthContext = createContext(null)
@@ -56,6 +56,25 @@ export function AuthProvider({ children }) {
     }
   }, [user])
 
+  /**
+   * Refresh user data from the API
+   * Call this after transactions to update points balance
+   */
+  const refreshUser = useCallback(async () => {
+    try {
+      const freshUserData = await userAPI.getProfile()
+      setUser(freshUserData)
+      const token = getToken()
+      if (token) {
+        saveAuth(token, freshUserData)
+      }
+      return freshUserData
+    } catch (error) {
+      console.error('Failed to refresh user data:', error)
+      return null
+    }
+  }, [])
+
   const value = {
     user,
     loading,
@@ -63,8 +82,8 @@ export function AuthProvider({ children }) {
     login,
     logout,
     updateUser,
+    refreshUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-

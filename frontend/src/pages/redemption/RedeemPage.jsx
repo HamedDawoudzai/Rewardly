@@ -1,27 +1,48 @@
-import { useState } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { QRCodeDisplay } from '@/components/shared'
-import { getUser } from '@/utils/auth'
+import { transactionAPI } from '@/api/transactions'
 import { Gift, Coins, AlertCircle, CheckCircle, QrCode, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { AuthContext } from '@/context/AuthContext'
 
 const RedeemPage = () => {
-  const user = getUser()
+  const { user, refreshUser } = useContext(AuthContext)
   const [amount, setAmount] = useState('')
   const [remark, setRemark] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
-  const [redemptionId, setRedemptionId] = useState(null)
+  const [redemptionResult, setRedemptionResult] = useState(null)
+  const [pendingRedemptions, setPendingRedemptions] = useState([])
+  const [loadingPending, setLoadingPending] = useState(true)
 
-  const availablePoints = user?.points || 1250
+  useEffect(() => {
+    loadPendingRedemptions()
+  }, [])
 
-  // Mock pending redemptions
-  const pendingRedemptions = [
-    { id: 'RDM-001', amount: 500, createdAt: '2025-11-28T10:30:00Z', status: 'pending' },
-  ]
+  const loadPendingRedemptions = async () => {
+    setLoadingPending(true)
+    try {
+      const response = await transactionAPI.getMyTransactions({ type: 'redemption' })
+      const transactions = response.results || response || []
+      
+      // Filter to only pending (unprocessed) redemptions
+      const pending = transactions.filter(tx => 
+        tx.type === 'redemption' && !tx.processedAt
+      )
+      setPendingRedemptions(pending)
+    } catch (err) {
+      console.error('Failed to load pending redemptions:', err)
+      setPendingRedemptions([])
+    } finally {
+      setLoadingPending(false)
+    }
+  }
+
+  const availablePoints = user?.points || 0
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -41,11 +62,15 @@ const RedeemPage = () => {
     }
 
     try {
-      // TODO: API call to create redemption
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setRedemptionId('RDM-' + Math.random().toString(36).substr(2, 9).toUpperCase())
+      const result = await transactionAPI.createRedemption(redemptionAmount, remark)
+      setRedemptionResult(result)
       setSuccess(true)
+      // Refresh user data to update points balance in navbar
+      await refreshUser()
+      // Refresh pending redemptions list
+      loadPendingRedemptions()
     } catch (err) {
+      console.error('Redemption error:', err)
       setError(err.message || 'Redemption request failed')
     } finally {
       setLoading(false)
@@ -57,7 +82,7 @@ const RedeemPage = () => {
     setRemark('')
     setSuccess(false)
     setError('')
-    setRedemptionId(null)
+    setRedemptionResult(null)
   }
 
   return (
@@ -86,7 +111,7 @@ const RedeemPage = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {success ? (
+            {success && redemptionResult ? (
               <div className="text-center py-6">
                 <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
                   <CheckCircle className="h-8 w-8 text-green-600" />
@@ -100,9 +125,9 @@ const RedeemPage = () => {
                 </p>
                 
                 <QRCodeDisplay
-                  value={redemptionId}
+                  value={`redemption:${redemptionResult.id}`}
                   title="Redemption QR Code"
-                  subtitle={`ID: ${redemptionId}`}
+                  subtitle={`Transaction #${redemptionResult.id}`}
                   size={160}
                 />
                 
@@ -180,7 +205,11 @@ const RedeemPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {pendingRedemptions.length === 0 ? (
+            {loadingPending ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-rewardly-blue border-t-transparent" />
+              </div>
+            ) : pendingRedemptions.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <QrCode className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                 <p>No pending redemptions</p>
@@ -193,14 +222,14 @@ const RedeemPage = () => {
                     className="p-4 border border-gray-200 rounded-lg hover:border-rewardly-blue transition-colors"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono text-sm text-gray-500">{redemption.id}</span>
+                      <span className="font-mono text-sm text-gray-500">#{redemption.id}</span>
                       <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
                         Pending
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold text-gray-900">{redemption.amount} points</p>
+                        <p className="font-semibold text-gray-900">{Math.abs(redemption.amount)} points</p>
                         <p className="text-xs text-gray-500">
                           {new Date(redemption.createdAt).toLocaleDateString()}
                         </p>
@@ -224,4 +253,3 @@ const RedeemPage = () => {
 }
 
 export default RedeemPage
-
