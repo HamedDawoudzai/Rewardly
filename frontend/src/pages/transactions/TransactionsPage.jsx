@@ -49,7 +49,18 @@ const TransactionsPage = () => {
       const txList = response.results || response || []
       const total = response.count || txList.length
       
-      setTransactions(txList)
+      // Normalize transactions to have consistent 'amount' field
+      const normalizedTx = txList.map(tx => {
+        let amount = tx.amount || 0
+        if (tx.type === 'transfer') {
+          amount = -(tx.sent || 0)
+        } else if (tx.type === 'redemption' && tx.redeemed) {
+          amount = -(tx.redeemed || tx.amount || 0)
+        }
+        return { ...tx, amount }
+      })
+      
+      setTransactions(normalizedTx)
       setTotalItems(total)
       setTotalPages(Math.ceil(total / itemsPerPage))
     } catch (error) {

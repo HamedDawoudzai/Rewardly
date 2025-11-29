@@ -39,37 +39,71 @@ const Dashboard = () => {
     setLoading(true)
     try {
       // Refresh user data for accurate points (this updates the navbar too)
-      await refreshUser()
+      const freshUser = await refreshUser()
 
       // Fetch user's transactions
       const transactionsResponse = await transactionAPI.getMyTransactions({ limit: 10 })
       const transactions = transactionsResponse.results || transactionsResponse || []
       
       // Format transactions for display
-      const formattedTransactions = transactions.slice(0, 3).map(tx => ({
-        id: tx.id,
-        type: tx.type,
-        amount: tx.amount,
-        description: tx.remark || `${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} transaction`,
-        date: new Date(tx.createdAt).toLocaleDateString()
-      }))
+      const formattedTransactions = transactions.slice(0, 3).map(tx => {
+        // Handle different amount field names based on transaction type
+        let amount = tx.amount || 0
+        if (tx.type === 'transfer') {
+          // Transfer uses 'sent' field, and it's negative for the sender
+          amount = -(tx.sent || 0)
+        } else if (tx.type === 'redemption' && tx.redeemed) {
+          // Processed redemption uses 'redeemed'
+          amount = -(tx.redeemed || tx.amount || 0)
+        }
+        
+        // Format date - handle missing createdAt
+        let dateStr = 'Recent'
+        if (tx.createdAt) {
+          try {
+            const date = new Date(tx.createdAt)
+            if (!isNaN(date.getTime())) {
+              dateStr = date.toLocaleDateString()
+            }
+          } catch {
+            dateStr = 'Recent'
+          }
+        }
+        
+        return {
+          id: tx.id,
+          type: tx.type,
+          amount,
+          description: tx.remark || `${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} transaction`,
+          date: dateStr
+        }
+      })
       setRecentTransactions(formattedTransactions)
 
       // Calculate stats from transactions
       const now = new Date()
-      const thisMonth = transactions.filter(tx => {
-        const txDate = new Date(tx.createdAt)
-        return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear()
-      })
+      const currentMonth = now.getMonth()
+      const currentYear = now.getFullYear()
+      
+      const thisMonthCount = transactions.filter(tx => {
+        if (!tx.createdAt) return false
+        try {
+          const txDate = new Date(tx.createdAt)
+          if (isNaN(txDate.getTime())) return false
+          return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear
+        } catch {
+          return false
+        }
+      }).length
       
       const pendingRedemptions = transactions.filter(
-        tx => tx.type === 'redemption' && !tx.processedAt
+        tx => tx.type === 'redemption' && !tx.processedAt && !tx.redeemed
       ).length
 
       setStats({
-        points: user?.points || 0,
+        points: freshUser?.points || user?.points || 0,
         pendingRedemptions,
-        transactionsThisMonth: thisMonth.length,
+        transactionsThisMonth: thisMonthCount,
         upcomingEvents: mockUpcomingEvents.length // TODO: Replace with real events API (Package 3)
       })
 
