@@ -1,12 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import rewardlyLogo from '@/assets/rewardly_cropped.png'
-import { authAPI } from '@/services/api'
-import { saveAuth } from '@/utils/auth'
+import { authAPI, userAPI } from '@/api/api'
+import { saveAuth, isAuthenticated } from '@/utils/auth'
 
 const LandingPage = () => {
+  const navigate = useNavigate()
   const [isLogin, setIsLogin] = useState(true)
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate('/dashboard')
+    }
+  }, [navigate])
   const [formData, setFormData] = useState({
     utorid: '',
     password: '',
@@ -24,18 +33,25 @@ const LandingPage = () => {
 
     try {
       if (isLogin) {
-        // Login
-        const response = await authAPI.login(formData.utorid, formData.password)
+        // Login - get token
+        const loginResponse = await authAPI.login(formData.utorid, formData.password)
         
-        // Save token and user data
-        saveAuth(response.token, response.user)
+        // Save token first (needed for the profile fetch)
+        localStorage.setItem('authToken', loginResponse.token)
+        
+        // Fetch user profile
+        const userProfile = await userAPI.getProfile()
+        
+        // Save auth with full user data
+        saveAuth(loginResponse.token, userProfile)
         
         // Set success state
         setSuccess(true)
         
-        // TODO: Redirect to dashboard or main app
-        console.log('Login successful:', response)
-        alert('Login successful! Welcome ' + response.user.name)
+        // Redirect to dashboard
+        setTimeout(() => {
+          navigate('/dashboard')
+        }, 500)
       } else {
         // Signup - TODO: Need to implement user creation endpoint
         setError('Signup is not yet implemented. Please contact an administrator.')
