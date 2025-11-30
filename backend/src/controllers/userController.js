@@ -20,8 +20,6 @@ const { z } = require('zod');
  */
 async function createUserHandler(req, res) {
   try {
-    // Body validation is now handled by middleware before auth
-    // So we can proceed directly to schema validation
     const validatedData = validateCreateUser(req.body);
     const user = await userService.createUser(validatedData);
     return res.status(201).json(user);
@@ -47,40 +45,26 @@ async function listUsersHandler(req, res) {
   try {
     const filters = {};
     
-    if (req.query.name) {
-      filters.name = req.query.name;
-    }
-    if (req.query.role) {
-      filters.role = req.query.role;
-    }
+    if (req.query.name) filters.name = req.query.name;
+    if (req.query.role) filters.role = req.query.role;
+
     if (req.query.verified !== undefined) {
-      // Parse boolean from query string - handle multiple formats
       const verifiedStr = String(req.query.verified).toLowerCase();
       filters.verified = verifiedStr === 'true' || verifiedStr === '1';
     }
+
     if (req.query.activated !== undefined) {
-      // Parse boolean from query string - handle multiple formats
       const activatedStr = String(req.query.activated).toLowerCase();
       filters.activated = activatedStr === 'true' || activatedStr === '1';
     }
 
-    // Validate page parameter
-    let page = 1;
-    if (req.query.page !== undefined) {
-      page = parseInt(req.query.page);
-      if (isNaN(page) || page < 1) {
-        return res.status(400).json({ error: 'Invalid page parameter' });
-      }
-    }
+    let page = req.query.page ? parseInt(req.query.page) : 1;
+    if (isNaN(page) || page < 1)
+      return res.status(400).json({ error: 'Invalid page parameter' });
 
-    // Validate limit parameter
-    let limit = 10;
-    if (req.query.limit !== undefined) {
-      limit = parseInt(req.query.limit);
-      if (isNaN(limit) || limit < 1) {
-        return res.status(400).json({ error: 'Invalid limit parameter' });
-      }
-    }
+    let limit = req.query.limit ? parseInt(req.query.limit) : 10;
+    if (isNaN(limit) || limit < 1)
+      return res.status(400).json({ error: 'Invalid limit parameter' });
 
     const result = await userService.getUsers(filters, page, limit);
     return res.status(200).json(result);
@@ -93,6 +77,7 @@ async function listUsersHandler(req, res) {
 /**
  * GET /users/:userId
  * Get a user by ID (Cashier+)
+ * Now hierarchy-protected
  */
 async function getUserHandler(req, res) {
   try {
@@ -102,11 +87,19 @@ async function getUserHandler(req, res) {
     }
 
     const requesterRole = userService.getUserRole(req.user);
-    const user = await userService.getUserById(userId, requesterRole, req.user.id);
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    // ❗ NEW SECURITY CHECK:
+    // Users cannot view a higher-ranked user
+    const canView = await userService.canViewUser(req.user, userId);
+    if (!canView) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You cannot view a user with higher privileges'
+      });
     }
+
+    const user = await userService.getUserById(userId, requesterRole, req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
     return res.status(200).json(user);
   } catch (error) {
@@ -118,6 +111,7 @@ async function getUserHandler(req, res) {
 /**
  * PATCH /users/:userId
  * Update user status/info (Manager+)
+ * Now hierarchy-protected
  */
 async function updateUserHandler(req, res) {
   try {
@@ -126,9 +120,18 @@ async function updateUserHandler(req, res) {
       return res.status(400).json({ error: 'Invalid user ID' });
     }
 
-    // Validate request body first (before processing)
     if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({ error: 'Request body is required' });
+    }
+
+    // ❗ NEW SECURITY CHECK:
+    // Ensure requester is allowed to modify target
+    const canModify = await userService.canModifyUser(req.user, userId);
+    if (!canModify) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You cannot modify a user with equal or higher privileges'
+      });
     }
 
     const validatedData = validateUpdateUser(req.body);
@@ -142,15 +145,10 @@ async function updateUserHandler(req, res) {
         error: error.errors.map(e => e.message).join(', ')
       });
     }
-    if (error.code === 'NOT_FOUND') {
-      return res.status(404).json({ error: error.message });
-    }
-    if (error.code === 'BAD_REQUEST') {
-      return res.status(400).json({ error: error.message });
-    }
-    if (error.code === 'FORBIDDEN') {
-      return res.status(403).json({ error: error.message });
-    }
+    if (error.code === 'NOT_FOUND') return res.status(404).json({ error: error.message });
+    if (error.code === 'BAD_REQUEST') return res.status(400).json({ error: error.message });
+    if (error.code === 'FORBIDDEN') return res.status(403).json({ error: error.message });
+
     console.error('Error updating user:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -158,7 +156,6 @@ async function updateUserHandler(req, res) {
 
 /**
  * GET /users/me
- * Get own profile (Regular+)
  */
 async function getOwnProfileHandler(req, res) {
   try {
@@ -175,34 +172,30 @@ async function getOwnProfileHandler(req, res) {
 
 /**
  * PATCH /users/me
- * Update own profile (Regular+)
  */
 async function updateOwnProfileHandler(req, res) {
   try {
-    // Handle multipart form data for avatar upload if present
     const updates = {};
-    
-    // Check if fields are provided (not just truthy) so validation can catch invalid values
+
     if (req.body.name !== undefined) updates.name = req.body.name;
     if (req.body.email !== undefined) updates.email = req.body.email;
     if (req.body.birthday !== undefined) updates.birthday = req.body.birthday;
+
     if (req.file) {
-      // If avatar file was uploaded via multer
       updates.avatarUrl = `/uploads/avatars/${req.file.filename}`;
     }
 
-    // Validate that at least one field is being updated
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'At least one field must be provided for update' });
     }
 
     const validatedData = validateUpdateProfile(updates);
-    
-    // Check that at least one field has a non-null value
-    const hasValidUpdates = Object.values(validatedData).some(val => val != null);
+
+    const hasValidUpdates = Object.values(validatedData).some(v => v != null);
     if (!hasValidUpdates) {
       return res.status(400).json({ error: 'At least one field must have a valid value for update' });
     }
+
     const profile = await userService.updateOwnProfile(req.user.id, validatedData);
     return res.status(200).json(profile);
   } catch (error) {
@@ -218,17 +211,16 @@ async function updateOwnProfileHandler(req, res) {
 
 /**
  * PATCH /users/me/password
- * Change own password (Regular+)
  */
 async function changePasswordHandler(req, res) {
   try {
-    // Validate request body first
     if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({ error: 'Request body is required' });
     }
 
     const validatedData = validateChangePassword(req.body);
     await userService.changePassword(req.user.id, validatedData.old, validatedData.new);
+
     return res.status(200).json({ message: 'Password changed successfully' });
   } catch (error) {
     if (error instanceof z.ZodError) {

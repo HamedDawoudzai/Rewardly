@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
 const PERMISSIONS = [
   // User Account & Auth
   { name: 'USER_REGISTER_SELF', description: 'User signs up' },
-  { name: 'CASHIER_CREATE_USER', description: 'Cashier creates user accounts' },
+  { name: 'MANAGER_CREATE_USER', description: 'Manager creates user accounts' },
   { name: 'USER_ACTIVATE_ACCOUNT', description: 'Complete activation flow' },
   { name: 'USER_LOGIN', description: 'Obtain access token' },
   { name: 'USER_LOGOUT', description: 'Invalidate/rotate refresh token' },
@@ -98,13 +98,13 @@ const ROLE_PERMISSIONS = {
     'USER_VIEW_PROMOTIONS'
   ],
   cashier: [
-    'CASHIER_CREATE_USER',
     'CASHIER_VIEW_USER',
     'CASHIER_CREATE_PURCHASE',
     'CASHIER_PROCESS_REDEMPTION',
     'CASHIER_APPLY_PROMO'
   ],
   manager: [
+    'MANAGER_CREATE_USER',
     'MANAGER_VIEW_USERS',
     'MANAGER_UPDATE_USER',
     'MANAGER_VERIFY_STUDENT',

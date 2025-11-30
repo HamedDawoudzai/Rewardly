@@ -4,125 +4,106 @@ const { verifyToken } = require('../utils/jwt');
 const userRepository = require('../repositories/userRepository');
 
 /**
+ * Role hierarchy (higher number = more power)
+ */
+const ROLE_RANK = {
+  regular: 1,
+  cashier: 2,
+  manager: 3,
+  superuser: 4
+};
+
+/**
+ * Helper — extract highest role for user
+ */
+function getPrimaryRole(user) {
+  if (!user.roles || user.roles.length === 0) return 'regular';
+
+  const names = user.roles.map(r => r.role.name);
+
+  if (names.includes('superuser')) return 'superuser';
+  if (names.includes('manager')) return 'manager';
+  if (names.includes('cashier')) return 'cashier';
+
+  return 'regular';
+}
+
+/**
  * Middleware to authenticate JWT token
- * Extracts token from Authorization header and verifies it
- * Attaches user to req.user
- * Uses repository for data access
+ * Attaches full RBAC info:
+ *   req.userRole  = "manager"
+ *   req.userRank  = 3
  */
 async function authenticate(req, res, next) {
   try {
-    // Extract token from Authorization header
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader) {
-      console.error('[AUTH] No authorization header:', {
-        path: req.path,
-        method: req.method
-      });
+      console.error('[AUTH] Missing auth header');
       return res.status(401).json({ error: 'No authorization header provided' });
     }
 
-    // Check for invalid Bearer token format (e.g., "Bearer undefined")
     if (authHeader.includes('undefined')) {
-      console.error('[AUTH] Authorization header contains undefined:', {
-        path: req.path,
-        method: req.method
-      });
+      console.error('[AUTH] Invalid header (undefined)');
       return res.status(401).json({ error: 'Invalid authorization header format' });
     }
 
-    // Expected format: "Bearer <token>"
     const parts = authHeader.split(' ');
     if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      console.error('[AUTH] Invalid authorization format:', {
-        path: req.path,
-        method: req.method,
-        headerLength: parts.length
-      });
+      console.error('[AUTH] Wrong Bearer format');
       return res.status(401).json({ error: 'Invalid authorization header format' });
     }
 
     const token = parts[1];
-    
-    // Check if token is empty or undefined
     if (!token || token === 'undefined' || token.trim() === '') {
-      console.error('[AUTH] Empty token:', {
-        path: req.path,
-        method: req.method
-      });
+      console.error('[AUTH] Empty token');
       return res.status(401).json({ error: 'Invalid authorization header format' });
     }
 
-    // Verify token
     const decoded = verifyToken(token);
-    console.log('[AUTH] Token verified:', {
-      userId: decoded.sub,
-      path: req.path,
-      method: req.method
-    });
 
-    // Fetch user from database
     const user = await userRepository.findUserById(decoded.sub, {
       include: {
-        roles: {
-          include: {
-            role: true
-          }
-        },
+        roles: { include: { role: true } },
         account: true
       }
     });
 
     if (!user) {
-      console.error('[AUTH] User not found:', {
-        userId: decoded.sub,
-        path: req.path,
-        method: req.method
-      });
+      console.error('[AUTH] User not found');
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // Check if user is activated
     if (!user.isActivated) {
-      console.error('[AUTH] User not activated:', {
-        userId: user.id,
-        utorid: user.username,
-        path: req.path,
-        method: req.method
-      });
+      console.error('[AUTH] User not activated');
       return res.status(403).json({ error: 'Account not activated' });
     }
 
-    // Attach user to request
+    // 🔥 Determine exact role & rank
+    const primaryRole = getPrimaryRole(user);
+    const rank = ROLE_RANK[primaryRole];
+
+    // Attach to request
     req.user = user;
     req.token = decoded;
-    
-    console.log('[AUTH] Authentication successful:', {
+    req.userRole = primaryRole;   // "manager"
+    req.userRank = rank;          // 3
+
+    console.log('[AUTH] User authenticated:', {
       userId: user.id,
       utorid: user.username,
-      roles: user.roles.map(r => r.role.name),
-      path: req.path,
-      method: req.method
+      primaryRole,
+      rank
     });
 
     next();
   } catch (error) {
     if (error.message === 'Invalid or expired token') {
-      console.error('[AUTH] Invalid or expired token:', {
-        path: req.path,
-        method: req.method,
-        error: error.message,
-        authHeader: req.headers.authorization ? 'present' : 'missing',
-        tokenPreview: req.headers.authorization ? req.headers.authorization.substring(0, 20) + '...' : 'none'
-      });
+      console.error('[AUTH] Invalid token');
       return res.status(401).json({ error: error.message });
     }
-    console.error('[AUTH] Authentication error:', {
-      path: req.path,
-      method: req.method,
-      error: error.message,
-      stack: error.stack
-    });
+
+    console.error('[AUTH] Server error', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -130,4 +111,3 @@ async function authenticate(req, res, next) {
 module.exports = {
   authenticate
 };
-

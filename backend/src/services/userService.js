@@ -8,10 +8,61 @@ const roleRepository = require('../repositories/roleRepository');
 const SALT_ROUNDS = 10;
 
 /**
- * User Service
- * Handles business logic for user operations
- * Maps between API spec fields and database schema fields
+ * ROLE HIERARCHY
  */
+function getRoleRank(role) {
+  switch (role) {
+    case 'superuser': return 4;
+    case 'manager': return 3;
+    case 'cashier': return 2;
+    default: return 1; // regular
+  }
+}
+
+/**
+ * Determine if requester can view target user
+ */
+async function canViewUser(requester, targetUserId) {
+  const target = await userRepository.findUserById(targetUserId, {
+    include: { roles: { include: { role: true } } }
+  });
+  if (!target) return false;
+
+  const requesterRole = getUserRole(requester);
+  const targetRole = getUserRole(target);
+
+  // superuser can view everyone
+  if (requesterRole === 'superuser') return true;
+
+  // cannot view higher-ranked user
+  return getRoleRank(requesterRole) >= getRoleRank(targetRole);
+}
+
+/**
+ * Determine if requester can modify target user
+ */
+async function canModifyUser(requester, targetUserId) {
+  const requesterRole = getUserRole(requester);
+  const requesterRank = getRoleRank(requesterRole);
+
+  // Regular + Cashier cannot modify any users
+  if (requesterRank <= 2) return false;
+
+  const target = await userRepository.findUserById(targetUserId, {
+    include: { roles: { include: { role: true } } }
+  });
+  if (!target) return false;
+
+  const targetRole = getUserRole(target);
+  const targetRank = getRoleRank(targetRole);
+
+  // Superuser can modify anyone
+  if (requesterRole === 'superuser') return true;
+
+  // Manager cannot modify managers (equal rank) or superusers (higher rank)
+  // Only managers can modify cashiers and regular users
+  return requesterRank > targetRank;
+}
 
 /**
  * Map user from DB schema to API response format
@@ -22,11 +73,10 @@ function mapUserToResponse(user, includeDetails = true) {
     utorid: user.username,
     name: user.name,
     email: user.email,
-    password: '' // Always include password field as empty string per spec
+    password: '' 
   };
 
   if (includeDetails) {
-    // Format birthday as YYYY-MM-DD
     result.birthday = user.birthday ? user.birthday.toISOString().split('T')[0] : null;
     result.role = user.roles && user.roles.length > 0 ? getUserRole({ roles: user.roles }) : 'regular';
     result.points = user.account ? user.account.pointsCached : 0;
@@ -34,6 +84,7 @@ function mapUserToResponse(user, includeDetails = true) {
     result.lastLogin = user.lastLogin ? user.lastLogin.toISOString() : null;
     result.verified = user.isStudentVerified;
     result.avatarUrl = user.avatarUrl || null;
+    result.isActivated = user.isActivated;
   }
 
   return result;
@@ -44,8 +95,6 @@ function mapUserToResponse(user, includeDetails = true) {
  */
 function getUserRole(user) {
   if (!user.roles || user.roles.length === 0) return 'regular';
-  
-  // Priority order: superuser > manager > cashier > regular
   const roleNames = user.roles.map(r => r.role.name);
   if (roleNames.includes('superuser')) return 'superuser';
   if (roleNames.includes('manager')) return 'manager';
@@ -55,17 +104,10 @@ function getUserRole(user) {
 
 /**
  * Create a new user account
- * @param {Object} userData - User data
- * @param {string} userData.utorid - Username
- * @param {string} userData.name - Full name
- * @param {string} userData.email - Email address
- * @returns {Promise<Object>} Created user with activation token
- * @throws {Error} If user already exists or validation fails
  */
 async function createUser(userData) {
   const { utorid, name, email } = userData;
 
-  // Check if user with utorid or email already exists
   const existingUser = await userRepository.findUserByEmailOrUsername(email, utorid);
 
   if (existingUser) {
@@ -81,31 +123,27 @@ async function createUser(userData) {
     }
   }
 
-  // Generate a temporary password (user will set password via activation)
   const tempPassword = uuidv4();
   const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
 
-  // Generate activation token
   const activationToken = uuidv4();
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
+  expiresAt.setDate(expiresAt.getDate() + 7);
 
-  // Prepare user data
   const newUserData = {
     username: utorid,
     email: email,
     passwordHash: passwordHash,
-    name: name
+    name: name,
+    isActivated: false
   };
 
-  // Create user with all relations via repository
   const result = await userRepository.createUserWithRelations(
     newUserData,
     activationToken,
     expiresAt
   );
 
-  // Return user data with activation token (resetToken per spec)
   return {
     id: result.user.id,
     utorid: result.user.username,
@@ -122,93 +160,33 @@ async function createUser(userData) {
  */
 async function getUsers(filters = {}, page = 1, limit = 10) {
   const { users, total } = await userRepository.findUsersWithFilters(filters, page, limit);
-  
   const results = users.map(user => mapUserToResponse(user, true));
-  
-  return {
-    count: total,
-    results
-  };
+  return { count: total, results };
 }
 
 /**
- * Get user by ID for different clearance levels
+ * Get user by ID
  */
 async function getUserById(userId, requesterRole, requesterId) {
   const user = await userRepository.findUserById(userId, {
     include: {
-      roles: {
-        include: {
-          role: true
-        }
-      },
+      roles: { include: { role: true } },
       account: true
     }
   });
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
-  const isSelf = userId === requesterId;
-  const role = requesterRole;
-
-  // Get available promotions
-  const promotions = await userRepository.getUserAvailablePromotions(userId);
-  const promosList = promotions.map(p => ({
-    id: p.id,
-    name: p.name,
-    minSpending: p.minSpendCents ? p.minSpendCents / 100 : null,
-    rate: p.pointsPerCentMultiplier || null,
-    points: p.pointsBonus || null
-  }));
-
-  // Cashier view (limited fields + promotions)
-  if (role === 'cashier') {
-    return {
-      id: user.id,
-      utorid: user.username,
-      name: user.name,
-      password: '',
-      points: user.account ? user.account.pointsCached : 0,
-      verified: user.isStudentVerified,
-      promotions: promosList
-    };
-  }
-
-  // Manager+ view (full details + promotions)
-  if (role === 'manager' || role === 'superuser') {
-    return {
-      id: user.id,
-      utorid: user.username,
-      name: user.name,
-      email: user.email,
-      password: '',
-      birthday: user.birthday ? user.birthday.toISOString().split('T')[0] : null,
-      role: getUserRole(user),
-      points: user.account ? user.account.pointsCached : 0,
-      createdAt: user.createdAt.toISOString(),
-      lastLogin: user.lastLogin ? user.lastLogin.toISOString() : null,
-      verified: user.isStudentVerified,
-      avatarUrl: user.avatarUrl || null,
-      promotions: promosList
-    };
-  }
-
-  return null;
+  return mapUserToResponse(user, true);
 }
 
 /**
- * Update user (manager+)
+ * Update user
  */
 async function updateUser(userId, updates, requesterRole) {
   const user = await userRepository.findUserById(userId, {
     include: {
-      roles: {
-        include: {
-          role: true
-        }
-      }
+      roles: { include: { role: true } }
     }
   });
 
@@ -221,86 +199,59 @@ async function updateUser(userId, updates, requesterRole) {
   const data = {};
   const changedFields = {};
 
-  // Email update (ignore null and undefined)
+  if (updates.name != null) {
+    data.name = updates.name;
+    changedFields.name = updates.name;
+  }
+
   if (updates.email != null) {
     data.email = updates.email;
     changedFields.email = updates.email;
   }
 
-  // Verified status (manager+) (ignore null and undefined)
   if (updates.verified != null) {
     data.isStudentVerified = updates.verified;
     changedFields.verified = updates.verified;
   }
 
-  // Suspicious status (manager+) (ignore null and undefined)
   if (updates.suspicious != null) {
     data.isSuspicious = updates.suspicious;
     changedFields.suspicious = updates.suspicious;
   }
 
-  // Role update (ignore null and undefined)
+  if (updates.isActivated != null) {
+    data.isActivated = updates.isActivated;
+    changedFields.isActivated = updates.isActivated;
+  }
+
   if (updates.role != null) {
-    const currentRole = getUserRole(user);
-    
-    // Validate role permissions
-    if (requesterRole === 'manager') {
-      // Manager can only set to regular or cashier
-      if (!['regular', 'cashier'].includes(updates.role)) {
-        const error = new Error('Managers can only set role to regular or cashier');
+    const newRole = await roleRepository.findRoleByName(updates.role);
+    if (newRole) {
+      // Managers cannot promote users to manager or superuser
+      // Only superusers can do that
+      if (requesterRole === 'manager' && (updates.role === 'manager' || updates.role === 'superuser')) {
+        const error = new Error('Managers cannot promote users to manager or superuser');
         error.code = 'FORBIDDEN';
         throw error;
       }
-    }
-    // Superuser can set to any role (already validated by schema)
 
-    // Check if promoting to cashier with suspicious flag
-    if (updates.role === 'cashier' && user.isSuspicious) {
-      const error = new Error('Cannot promote suspicious user to cashier');
-      error.code = 'BAD_REQUEST';
-      throw error;
-    }
-
-    // Update role
-    const newRole = await roleRepository.findRoleByName(updates.role);
-    if (newRole) {
-      console.log('[UPDATE USER] Updating role:', {
-        userId,
-        currentRoles: user.roles.map(r => r.role.name),
-        newRole: updates.role,
-        requesterRole
-      });
-      
-      // Remove existing roles
       const existingRoles = await roleRepository.getUserRoles(userId);
       for (const ur of existingRoles) {
         await roleRepository.removeRoleFromUser(userId, ur.roleId);
       }
-      
-      // Assign new role
       await roleRepository.assignRoleToUser(userId, newRole.id);
-      
       changedFields.role = updates.role;
-      
-      
-      console.log('[UPDATE USER] Role updated successfully:', {
-        userId,
-        newRole: updates.role,
-        note: 'Token remains valid - permissions checked against database'
-      });
     }
   }
 
-  // Update user
   if (Object.keys(data).length > 0) {
     await userRepository.updateUser(userId, data);
   }
 
-  // Return changed fields plus id, utorid, name
   return {
     id: user.id,
     utorid: user.username,
-    name: user.name,
+    name: data.name ?? user.name,
     ...changedFields
   };
 }
@@ -311,43 +262,14 @@ async function updateUser(userId, updates, requesterRole) {
 async function getOwnProfile(userId) {
   const user = await userRepository.findUserById(userId, {
     include: {
-      roles: {
-        include: {
-          role: true
-        }
-      },
+      roles: { include: { role: true } },
       account: true
     }
   });
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
-  const promotions = await userRepository.getUserAvailablePromotions(userId);
-  const promosList = promotions.map(p => ({
-    id: p.id,
-    name: p.name,
-    minSpending: p.minSpendCents ? p.minSpendCents / 100 : null,
-    rate: p.pointsPerCentMultiplier || null,
-    points: p.pointsBonus || null
-  }));
-
-  return {
-    id: user.id,
-    utorid: user.username,
-    name: user.name,
-    email: user.email,
-    password: '',
-    birthday: user.birthday ? user.birthday.toISOString().split('T')[0] : null,
-    role: getUserRole(user),
-    points: user.account ? user.account.pointsCached : 0,
-    createdAt: user.createdAt.toISOString(),
-    lastLogin: user.lastLogin ? user.lastLogin.toISOString() : null,
-    verified: user.isStudentVerified,
-    avatarUrl: user.avatarUrl || null,
-    promotions: promosList
-  };
+  return mapUserToResponse(user, true);
 }
 
 /**
@@ -356,28 +278,12 @@ async function getOwnProfile(userId) {
 async function updateOwnProfile(userId, updates) {
   const data = {};
 
-  // Skip null and undefined values
-  if (updates.name != null) {
-    data.name = updates.name;
-  }
-
-  if (updates.email != null) {
-    data.email = updates.email;
-  }
-
-  if (updates.birthday != null) {
-    // Convert YYYY-MM-DD string to Date object
-    data.birthday = new Date(updates.birthday + 'T00:00:00.000Z');
-  }
-
-  // Note: avatar upload handling would be done in controller with multer
-  if (updates.avatarUrl != null) {
-    data.avatarUrl = updates.avatarUrl;
-  }
+  if (updates.name != null) data.name = updates.name;
+  if (updates.email != null) data.email = updates.email;
+  if (updates.birthday != null) data.birthday = new Date(updates.birthday + 'T00:00:00.000Z');
+  if (updates.avatarUrl != null) data.avatarUrl = updates.avatarUrl;
 
   await userRepository.updateUser(userId, data);
-
-  // Return full profile
   return await getOwnProfile(userId);
 }
 
@@ -393,7 +299,6 @@ async function changePassword(userId, oldPassword, newPassword) {
     throw error;
   }
 
-  // Verify old password
   const isValid = await bcrypt.compare(oldPassword, user.passwordHash);
   if (!isValid) {
     const error = new Error('Incorrect old password');
@@ -401,64 +306,34 @@ async function changePassword(userId, oldPassword, newPassword) {
     throw error;
   }
 
-  // Hash new password
   const newPasswordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-
-  // Update password
   await userRepository.updatePassword(userId, newPasswordHash);
 
   return { success: true };
 }
 
-/**
- * Get user by ID
- * @param {number} userId - User ID
- * @returns {Promise<Object|null>} User object or null
- */
 async function getUserByIdSimple(userId) {
   return await userRepository.findUserById(userId, {
     include: {
-      roles: {
-        include: {
-          role: true
-        }
-      },
+      roles: { include: { role: true } },
       account: true
     }
   });
 }
 
-/**
- * Get user by email
- * @param {string} email - Email address
- * @returns {Promise<Object|null>} User object or null
- */
 async function getUserByEmail(email) {
   return await userRepository.findUserByEmail(email, {
     include: {
-      roles: {
-        include: {
-          role: true
-        }
-      },
+      roles: { include: { role: true } },
       account: true
     }
   });
 }
 
-/**
- * Get user by username
- * @param {string} username - Username (utorid)
- * @returns {Promise<Object|null>} User object or null
- */
 async function getUserByUsername(username) {
   return await userRepository.findUserByUsername(username, {
     include: {
-      roles: {
-        include: {
-          role: true
-        }
-      },
+      roles: { include: { role: true } },
       account: true
     }
   });
@@ -475,5 +350,10 @@ module.exports = {
   getUserByIdSimple,
   getUserByEmail,
   getUserByUsername,
-  getUserRole
+  getUserRole,
+
+  // 🔥 NEW EXPORTS
+  canViewUser,
+  canModifyUser,
+  getRoleRank
 };

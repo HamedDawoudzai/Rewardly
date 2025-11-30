@@ -3,120 +3,115 @@
 const roleRepository = require('../repositories/roleRepository');
 
 /**
- * Check if user has a specific permission
- * Uses role hierarchy to check inherited permissions
- * Uses repository for data access
- * @param {number} userId - User ID
- * @param {string} permissionName - Permission name
- * @returns {Promise<boolean>} True if user has permission
+ * Role hierarchy (spec)
  */
-async function userHasPermission(userId, permissionName) {
-  try {
-    // Get user's roles
-    const userRoles = await roleRepository.getUserRoles(userId);
+const ROLE_RANK = {
+  regular: 1,
+  cashier: 2,
+  manager: 3,
+  superuser: 4
+};
 
-    if (!userRoles.length) {
-      return false;
-    }
+/**
+ * Determine highest role from user.roles
+ */
+function getPrimaryRole(user) {
+  if (!user.roles || user.roles.length === 0) return 'regular';
 
-    const roleIds = userRoles.map(ur => ur.roleId);
+  const names = user.roles.map(r => r.role.name);
 
-    // Check if any of user's roles (or their ancestors in hierarchy) have the permission
-    return await roleRepository.hasPermission(roleIds, permissionName);
-  } catch (error) {
-    console.error('Error checking permission:', error);
-    return false;
-  }
+  if (names.includes('superuser')) return 'superuser';
+  if (names.includes('manager')) return 'manager';
+  if (names.includes('cashier')) return 'cashier';
+
+  return 'regular';
 }
 
 /**
- * Middleware factory to require a specific permission
- * @param {string} permissionName - Required permission name
- * @returns {Function} Express middleware
+ * Check if user has DB-provided permission
+ */
+async function userHasPermission(userId, permissionName) {
+  const roles = await roleRepository.getUserRoles(userId);
+  if (!roles.length) return false;
+
+  const roleIds = roles.map(r => r.roleId);
+  return await roleRepository.hasPermission(roleIds, permissionName);
+}
+
+/**
+ * Standard permission middleware
  */
 function requirePermission(permissionName) {
   return async (req, res, next) => {
     try {
-      // If no user is authenticated, check if request has no auth header
-      // In that case, return 403 instead of 401 to match test expectations
-      if (!req.user) {
-        const authHeader = req.headers.authorization;
-        if (!authHeader) {
-          // No auth header at all - return 403 for consistency with test expectations
-          console.error('[PERMISSION] No user authenticated, no auth header:', {
-            permission: permissionName,
-            path: req.path,
-            method: req.method
-          });
-          return res.status(403).json({ 
-            error: 'Forbidden',
-            message: `You do not have permission to perform this action (${permissionName})` 
-          });
-        }
-        console.error('[PERMISSION] No user authenticated, but auth header present:', {
-          permission: permissionName,
-          path: req.path,
-          method: req.method
-        });
-        return res.status(401).json({ error: 'Authentication required' });
+      if (!req.user)
+        return res.status(401).json({ error: "Authentication required" });
+
+      const allowed = await userHasPermission(req.user.id, permissionName);
+      if (!allowed) {
+        return res.status(403).json({ error: "Forbidden: Missing permission" });
       }
-
-      console.log('[PERMISSION] Checking permission:', {
-        userId: req.user.id,
-        utorid: req.user.username,
-        permission: permissionName,
-        path: req.path,
-        method: req.method
-      });
-
-      const hasPermission = await userHasPermission(req.user.id, permissionName);
-
-      if (!hasPermission) {
-        console.error('[PERMISSION] Permission denied:', {
-          userId: req.user.id,
-          utorid: req.user.username,
-          permission: permissionName,
-          path: req.path,
-          method: req.method
-        });
-        return res.status(403).json({ 
-          error: 'Forbidden',
-          message: `You do not have permission to perform this action (${permissionName})` 
-        });
-      }
-
-      console.log('[PERMISSION] Permission granted:', {
-        userId: req.user.id,
-        utorid: req.user.username,
-        permission: permissionName,
-        path: req.path,
-        method: req.method
-      });
 
       next();
-    } catch (error) {
-      console.error('[PERMISSION] Permission check error:', {
-        userId: req.user?.id,
-        permission: permissionName,
-        path: req.path,
-        method: req.method,
-        error: error.message,
-        stack: error.stack
-      });
-      return res.status(500).json({ error: 'Internal server error' });
+    } catch (err) {
+      console.error("requirePermission error:", err);
+      return res.status(500).json({ error: "Internal server error" });
     }
   };
 }
 
 /**
- * Middleware to require cashier or higher role
- * Checks for CASHIER_CREATE_USER permission
+ * Rank-level middleware
  */
-const requireCashierOrHigher = requirePermission('CASHIER_CREATE_USER');
+function requireRankAtLeast(roleName) {
+  const requiredRank = ROLE_RANK[roleName];
+
+  return (req, res, next) => {
+    if (!req.user)
+      return res.status(401).json({ error: "Authentication required" });
+
+    const rank = req.userRank;
+    if (rank < requiredRank) {
+      return res.status(403).json({ error: "Insufficient role level" });
+    }
+
+    next();
+  };
+}
+
+/**
+ * Cannot modify equal or higher-ranked user
+ * Superusers can modify anyone
+ */
+function requireModifyPower() {
+  return (req, res, next) => {
+    if (!req.user || !req.targetUser)
+      return res.status(500).json({ error: "Server misconfiguration" });
+
+    // Superusers can modify anyone
+    if (req.userRole === 'superuser') {
+      return next();
+    }
+
+    const actorRank = req.userRank;
+    const targetRank = req.targetUserRank;
+
+    if (actorRank <= targetRank) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "You cannot modify a user with equal or higher rank"
+      });
+    }
+
+    next();
+  };
+}
 
 module.exports = {
   userHasPermission,
   requirePermission,
-  requireCashierOrHigher
+  requireRankAtLeast,
+  requireModifyPower,
+  ROLE_RANK,
+  getPrimaryRole
 };
-

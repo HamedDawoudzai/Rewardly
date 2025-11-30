@@ -1,7 +1,6 @@
 'use strict';
 
 const { PrismaClient } = require('@prisma/client');
-
 const prisma = new PrismaClient();
 
 /**
@@ -23,9 +22,11 @@ async function getUserRoles(userId) {
 
 /**
  * Check if user has a specific permission
+ * (Supports inherited permissions through role hierarchy)
+ *
  * @param {Array<number>} roleIds - User's role IDs
  * @param {string} permissionName - Permission name to check
- * @returns {Promise<boolean>} True if user has permission
+ * @returns {Promise<boolean>} True if permission exists
  */
 async function hasPermission(roleIds, permissionName) {
   const result = await prisma.rolePermission.findFirst({
@@ -33,9 +34,10 @@ async function hasPermission(roleIds, permissionName) {
       permission: { name: permissionName },
       role: {
         OR: [
-          // Direct permission (role has the permission)
+          // Direct role → permission
           { id: { in: roleIds } },
-          // Inherited permission (ancestor role has the permission)
+
+          // Inherited from ancestor role
           {
             descendantOf: {
               some: {
@@ -45,6 +47,11 @@ async function hasPermission(roleIds, permissionName) {
           }
         ]
       }
+    },
+    // Added for safer debugging and consistent Prisma behavior
+    include: {
+      permission: true,
+      role: true
     }
   });
 
@@ -79,7 +86,7 @@ async function getPermissionsForRoles(roleIds) {
 }
 
 /**
- * Find role by name
+ * Find a role by name
  * @param {string} name - Role name
  * @returns {Promise<Object|null>} Role object or null
  */
@@ -90,10 +97,10 @@ async function findRoleByName(name) {
 }
 
 /**
- * Assign role to user
+ * Assign a role to a user
  * @param {number} userId - User ID
  * @param {number} roleId - Role ID
- * @returns {Promise<Object>} Created UserRole
+ * @returns {Promise<Object>} Created userRole record
  */
 async function assignRoleToUser(userId, roleId) {
   return await prisma.userRole.create({
@@ -105,10 +112,10 @@ async function assignRoleToUser(userId, roleId) {
 }
 
 /**
- * Remove role from user
+ * Remove a role from a user
  * @param {number} userId - User ID
  * @param {number} roleId - Role ID
- * @returns {Promise<Object>} Deleted UserRole
+ * @returns {Promise<Object>} Deleted userRole record
  */
 async function removeRoleFromUser(userId, roleId) {
   return await prisma.userRole.delete({
@@ -129,4 +136,3 @@ module.exports = {
   assignRoleToUser,
   removeRoleFromUser
 };
-

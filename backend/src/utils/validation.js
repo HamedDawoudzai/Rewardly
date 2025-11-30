@@ -22,8 +22,9 @@ const nameSchema = z.string()
 const utEmailSchema = z.string()
   .email('Invalid email format')
   .refine(
-    (email) => email.endsWith('@mail.utoronto.ca') || 
-               email.endsWith('@utoronto.ca'),
+    (email) =>
+      email.endsWith('@mail.utoronto.ca') ||
+      email.endsWith('@utoronto.ca'),
     'Email must be a valid University of Toronto email'
   );
 
@@ -49,18 +50,24 @@ const createUserSchema = z.object({
   email: utEmailSchema
 });
 
-// User update schema
+// User update schema (Manager+)
 const updateUserSchema = z.object({
+  name: nameSchema.nullish(),              // ✅ FIXED: allow name updates
   email: utEmailSchema.nullish(),
+
   verified: z.boolean().nullish().refine(
     (val) => val == null || val === true,
     { message: 'Verified can only be set to true, cannot unverify a user' }
   ),
+
   suspicious: z.boolean().nullish(),
-  role: roleSchema.nullish()
+
+  role: roleSchema.nullish(),
+
+  isActivated: z.boolean().nullish()
 });
 
-// Profile update schema
+// Profile update schema (self-update via /users/me)
 const updateProfileSchema = z.object({
   name: nameSchema.nullish(),
   email: utEmailSchema.nullish(),
@@ -95,7 +102,7 @@ const resetPasswordSchema = z.object({
 const createPromotionSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
   description: z.string().min(1, 'Description is required'),
-  type: z.enum(['automatic', 'one-time'], { 
+  type: z.enum(['automatic', 'one-time'], {
     errorMap: () => ({ message: 'Type must be either "automatic" or "one-time"' })
   }),
   startTime: z.string().refine((val) => {
@@ -122,7 +129,7 @@ const createPromotionSchema = z.object({
 const updatePromotionSchema = z.object({
   name: z.string().min(1, 'Name must not be empty').max(100, 'Name must be at most 100 characters').nullable().optional(),
   description: z.string().min(1, 'Description must not be empty').nullable().optional(),
-  type: z.enum(['automatic', 'one-time'], { 
+  type: z.enum(['automatic', 'one-time'], {
     errorMap: () => ({ message: 'Type must be either "automatic" or "one-time"' })
   }).nullable().optional(),
   startTime: z.string().refine((val) => {
@@ -139,11 +146,9 @@ const updatePromotionSchema = z.object({
 });
 
 /**
- * Validate user creation payload
- * @param {Object} data - Request body
- * @returns {Object} Validated data
- * @throws {z.ZodError} If validation fails
+ * Exported validators
  */
+
 function validateCreateUser(data) {
   return createUserSchema.parse(data);
 }
@@ -199,4 +204,3 @@ module.exports = {
   createPromotionSchema,
   updatePromotionSchema
 };
-
