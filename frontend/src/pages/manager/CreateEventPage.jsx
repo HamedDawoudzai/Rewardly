@@ -21,8 +21,7 @@ const CreateEventPage = () => {
     startTime: '',
     endTime: '',
     capacity: '',
-    pointsRemain: '',
-    pointsAwarded: '',
+    points: '',
     published: false
   })
 
@@ -44,6 +43,9 @@ const CreateEventPage = () => {
         return date.toISOString().slice(0, 16)
       }
       
+      // Calculate total points from remaining + awarded
+      const totalPoints = (event.pointsRemain || 0) + (event.pointsAwarded || 0);
+      
       setFormData({
         name: event.name || '',
         description: event.description || '',
@@ -51,8 +53,7 @@ const CreateEventPage = () => {
         startTime: formatDateForInput(event.startsAt || event.startTime),
         endTime: formatDateForInput(event.endsAt || event.endTime),
         capacity: event.capacity || '',
-        pointsRemain: event.pointsRemain || event.pointsPool || '',
-        pointsAwarded: event.pointsAwarded || '',
+        points: totalPoints || event.pointsPool || '',
         published: event.published || false
       })
     } catch (err) {
@@ -88,6 +89,11 @@ const CreateEventPage = () => {
       setLoading(false)
       return
     }
+    if (!formData.points || parseInt(formData.points) < 1) {
+      setError('Please enter a points pool (minimum 1)')
+      setLoading(false)
+      return
+    }
 
     try {
       const eventData = {
@@ -97,8 +103,7 @@ const CreateEventPage = () => {
         startTime: new Date(formData.startTime).toISOString(),
         endTime: new Date(formData.endTime).toISOString(),
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
-        pointsRemain: formData.pointsRemain ? parseInt(formData.pointsRemain) : 0,
-        pointsAwarded: formData.pointsAwarded ? parseInt(formData.pointsAwarded) : 0,
+        points: formData.points ? parseInt(formData.points) : 100,
         published: formData.published
       }
 
@@ -231,7 +236,7 @@ const CreateEventPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Capacity
@@ -248,31 +253,19 @@ const CreateEventPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Points Pool
+                    Points Pool *
                   </label>
                   <input
                     type="number"
-                    min="0"
-                    value={formData.pointsRemain}
-                    onChange={(e) => setFormData({ ...formData, pointsRemain: e.target.value })}
+                    min="1"
+                    value={formData.points}
+                    onChange={(e) => setFormData({ ...formData, points: e.target.value })}
                     placeholder="e.g., 5000"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
                     disabled={loading}
+                    required
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Points per Attendee
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.pointsAwarded}
-                    onChange={(e) => setFormData({ ...formData, pointsAwarded: e.target.value })}
-                    placeholder="e.g., 100"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
-                    disabled={loading}
-                  />
+                  <p className="text-xs text-gray-500 mt-1">Total points available to award to attendees</p>
                 </div>
               </div>
 
