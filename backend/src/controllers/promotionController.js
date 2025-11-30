@@ -6,21 +6,15 @@ const { validateCreatePromotion, validateUpdatePromotion } = require('../utils/v
 const { z } = require('zod');
 
 /**
- * Promotion Controller
- * Handles HTTP requests for promotion operations
- */
-
-/**
  * POST /promotions
  * Create a promotion (Manager+)
  */
 async function createPromotionHandler(req, res) {
   try {
-    // Validate request body first
     if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({ error: 'Request body is required' });
     }
-    
+
     const validatedData = validateCreatePromotion(req.body);
     const promotion = await promotionService.createPromotion(validatedData, req.user.id);
     return res.status(201).json(promotion);
@@ -37,12 +31,11 @@ async function createPromotionHandler(req, res) {
 
 /**
  * GET /promotions
- * List promotions
  */
 async function listPromotionsHandler(req, res) {
   try {
     const filters = {};
-    
+
     if (req.query.name) filters.name = req.query.name;
     if (req.query.type) filters.type = req.query.type;
     if (req.query.started !== undefined) {
@@ -55,7 +48,6 @@ async function listPromotionsHandler(req, res) {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    // Validate page and limit
     if (page <= 0) {
       return res.status(400).json({ message: 'Page must be greater than 0.' });
     }
@@ -79,7 +71,6 @@ async function listPromotionsHandler(req, res) {
 
 /**
  * GET /promotions/:promotionId
- * Get a promotion by ID (Regular+)
  */
 async function getPromotionHandler(req, res) {
   try {
@@ -88,7 +79,6 @@ async function getPromotionHandler(req, res) {
       return res.status(400).json({ error: 'Invalid promotion ID' });
     }
 
-    // Check if user is privileged (manager or superuser)
     const userRole = userService.getUserRole(req.user);
     const isPrivileged = userRole === 'manager' || userRole === 'superuser';
 
@@ -107,7 +97,6 @@ async function getPromotionHandler(req, res) {
 
 /**
  * PATCH /promotions/:promotionId
- * Update a promotion (Manager+)
  */
 async function updatePromotionHandler(req, res) {
   try {
@@ -117,7 +106,7 @@ async function updatePromotionHandler(req, res) {
     }
 
     const validatedData = validateUpdatePromotion(req.body);
-    
+
     const result = await promotionService.updatePromotion(promotionId, validatedData);
     return res.status(200).json(result);
   } catch (error) {
@@ -136,7 +125,6 @@ async function updatePromotionHandler(req, res) {
 
 /**
  * DELETE /promotions/:promotionId
- * Delete a promotion (Manager+)
  */
 async function deletePromotionHandler(req, res) {
   try {
@@ -146,7 +134,9 @@ async function deletePromotionHandler(req, res) {
     }
 
     await promotionService.deletePromotion(promotionId);
-    return res.status(204).send();
+
+    // FIX: Return JSON so frontend does NOT throw a network error
+    return res.status(200).json({ success: true });
   } catch (error) {
     if (error.message.includes('not found')) {
       return res.status(404).json({ message: 'Promotion not found.' });
@@ -166,4 +156,3 @@ module.exports = {
   updatePromotionHandler,
   deletePromotionHandler
 };
-

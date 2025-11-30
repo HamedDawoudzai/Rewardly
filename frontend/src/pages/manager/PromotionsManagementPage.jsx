@@ -4,20 +4,14 @@ import { DataTable } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
 import { Eye, Plus, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { promotionAPI } from '@/api/promotions'
 
-// ============================================================
-// TODO: Replace mock data imports with API calls
-// ============================================================
-import { 
-  mockPromotions, 
-  getMockPaginatedData,
-  simulateApiDelay,
-  PAGINATION_DEFAULTS 
-} from '@/mock'
+const ITEMS_PER_PAGE = 10
 
 const PromotionsManagementPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [promotions, setPromotions] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
@@ -26,52 +20,52 @@ const PromotionsManagementPage = () => {
     loadPromotions()
   }, [currentPage])
 
-  // ============================================================
-  // TODO: Replace with actual API call
-  // Example:
-  //   const response = await promotionAPI.getAll({
-  //     page: currentPage,
-  //     limit: PAGINATION_DEFAULTS.itemsPerPage
-  //   })
-  // ============================================================
-  const loadPromotions = async () => {
-    setLoading(true)
-    try {
-      await simulateApiDelay(300) // Remove this when using real API
-      
-      // TODO: Replace with actual API call
-      const { data, pagination } = getMockPaginatedData(
-        mockPromotions, 
-        currentPage, 
-        PAGINATION_DEFAULTS.itemsPerPage
-      )
-      
-      setPromotions(data)
-      setTotalPages(pagination.totalPages)
-      setTotalItems(pagination.totalItems)
-    } catch (error) {
-      console.error('Failed to load promotions:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+const loadPromotions = async () => {
+  setLoading(true)
+  setError('')
 
-  // ============================================================
-  // TODO: Implement delete promotion API call
-  // Example:
-  //   await promotionAPI.delete(promotionId)
-  //   loadPromotions() // Reload after delete
-  // ============================================================
+  try {
+    const response = await promotionAPI.getAll({
+      page: currentPage,
+      limit: ITEMS_PER_PAGE,
+    })
+
+    // Backend returns: { count, results }
+    const data = response.results || []
+    const total = response.count || data.length
+
+    setPromotions(data)
+    setTotalItems(total)
+
+    // Your API does NOT return totalPages, so compute it manually
+    setTotalPages(Math.max(1, Math.ceil(total / ITEMS_PER_PAGE)))
+  } catch (err) {
+    console.error('Failed to load promotions:', err)
+    setError(err.message || 'Failed to load promotions')
+    setPromotions([])
+    setTotalPages(1)
+    setTotalItems(0)
+  } finally {
+    setLoading(false)
+  }
+}
+
+
   const handleDelete = async (promotionId) => {
-    if (!confirm('Are you sure you want to delete this promotion?')) return
-    console.log('TODO: Delete promotion:', promotionId)
-    // TODO: Call API and reload
+    if (!window.confirm('Are you sure you want to delete this promotion?')) return
+    try {
+      await promotionAPI.delete(promotionId)
+      await loadPromotions()
+    } catch (err) {
+      console.error('Failed to delete promotion:', err)
+      alert(err.message || 'Failed to delete promotion')
+    }
   }
 
   const isActive = (promo) => {
     const now = new Date()
-    const start = new Date(promo.startDate)
-    const end = promo.endDate ? new Date(promo.endDate) : null
+    const start = new Date(promo.startTime)
+    const end = promo.endTime ? new Date(promo.endTime) : null
     return now >= start && (!end || now <= end)
   }
 
@@ -104,12 +98,12 @@ const PromotionsManagementPage = () => {
       )
     },
     {
-      key: 'startDate',
+      key: 'startTime',
       label: 'Start Date',
       render: (value) => new Date(value).toLocaleDateString()
     },
     {
-      key: 'endDate',
+      key: 'endTime',
       label: 'End Date',
       render: (value) => value ? new Date(value).toLocaleDateString() : 'No end date'
     },
@@ -177,6 +171,12 @@ const PromotionsManagementPage = () => {
         }
       />
 
+      {error && (
+        <div className="mb-4 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
       <DataTable
         columns={columns}
         data={promotions}
@@ -187,7 +187,7 @@ const PromotionsManagementPage = () => {
         currentPage={currentPage}
         totalPages={totalPages}
         totalItems={totalItems}
-        itemsPerPage={PAGINATION_DEFAULTS.itemsPerPage}
+        itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={setCurrentPage}
         emptyMessage="No promotions found"
       />
