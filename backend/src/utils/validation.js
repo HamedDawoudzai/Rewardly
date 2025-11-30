@@ -111,15 +111,6 @@ const createPromotionSchema = z.object({
   points: z.number().int('Points must be an integer').nonnegative('Points must be non-negative').nullable().optional()
 }).refine((data) => {
   const start = new Date(data.startTime);
-  const now = new Date();
-  // Allow 5 second tolerance for test timing issues
-  const fiveSecondsAgo = new Date(now.getTime() - 5000);
-  return start >= fiveSecondsAgo;
-}, {
-  message: 'Start time must not be in the past',
-  path: ['startTime']
-}).refine((data) => {
-  const start = new Date(data.startTime);
   const end = new Date(data.endTime);
   return end > start;
 }, {
