@@ -1,13 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, AlertCircle } from 'lucide-react'
+import { eventAPI } from '@/api/events'
 
 const CreateEventPage = () => {
   const navigate = useNavigate()
+  const { id } = useParams()
+  const isEditMode = !!id
+  
   const [loading, setLoading] = useState(false)
+  const [loadingEvent, setLoadingEvent] = useState(isEditMode)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     name: '',
@@ -16,9 +21,47 @@ const CreateEventPage = () => {
     startTime: '',
     endTime: '',
     capacity: '',
+    pointsRemain: '',
     pointsAwarded: '',
     published: false
   })
+
+  useEffect(() => {
+    if (isEditMode) {
+      loadEvent()
+    }
+  }, [id])
+
+  const loadEvent = async () => {
+    setLoadingEvent(true)
+    try {
+      const event = await eventAPI.getById(id)
+      
+      // Format dates for datetime-local input
+      const formatDateForInput = (dateString) => {
+        if (!dateString) return ''
+        const date = new Date(dateString)
+        return date.toISOString().slice(0, 16)
+      }
+      
+      setFormData({
+        name: event.name || '',
+        description: event.description || '',
+        location: event.location || '',
+        startTime: formatDateForInput(event.startsAt || event.startTime),
+        endTime: formatDateForInput(event.endsAt || event.endTime),
+        capacity: event.capacity || '',
+        pointsRemain: event.pointsRemain || event.pointsPool || '',
+        pointsAwarded: event.pointsAwarded || '',
+        published: event.published || false
+      })
+    } catch (err) {
+      console.error('Failed to load event:', err)
+      setError('Failed to load event')
+    } finally {
+      setLoadingEvent(false)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -35,28 +78,62 @@ const CreateEventPage = () => {
       setLoading(false)
       return
     }
+    if (!formData.startTime) {
+      setError('Please select a start time')
+      setLoading(false)
+      return
+    }
+    if (!formData.endTime) {
+      setError('Please select an end time')
+      setLoading(false)
+      return
+    }
 
     try {
-      // TODO: API call to create event
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const eventData = {
+        name: formData.name,
+        description: formData.description || null,
+        location: formData.location,
+        startTime: new Date(formData.startTime).toISOString(),
+        endTime: new Date(formData.endTime).toISOString(),
+        capacity: formData.capacity ? parseInt(formData.capacity) : null,
+        pointsRemain: formData.pointsRemain ? parseInt(formData.pointsRemain) : 0,
+        pointsAwarded: formData.pointsAwarded ? parseInt(formData.pointsAwarded) : 0,
+        published: formData.published
+      }
+
+      if (isEditMode) {
+        await eventAPI.update(id, eventData)
+      } else {
+        await eventAPI.create(eventData)
+      }
+      
       navigate('/manager/events')
     } catch (err) {
-      setError(err.message || 'Failed to create event')
+      setError(err.message || `Failed to ${isEditMode ? 'update' : 'create'} event`)
     } finally {
       setLoading(false)
     }
   }
 
+  if (loadingEvent) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-rewardly-blue border-t-transparent" />
+      </div>
+    )
+  }
+
   return (
     <div>
       <PageHeader 
-        title="Create Event" 
-        subtitle="Create a new event"
+        title={isEditMode ? 'Edit Event' : 'Create Event'} 
+        subtitle={isEditMode ? 'Update event details' : 'Create a new event'}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Manager' },
           { label: 'Events', href: '/manager/events' },
-          { label: 'Create' }
+          { label: isEditMode ? 'Edit' : 'Create' }
         ]}
         actions={
           <Link to="/manager/events">
@@ -154,7 +231,7 @@ const CreateEventPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Capacity
@@ -164,7 +241,21 @@ const CreateEventPage = () => {
                     min="1"
                     value={formData.capacity}
                     onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                    placeholder="Leave empty for unlimited"
+                    placeholder="Unlimited"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
+                    disabled={loading}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Points Pool
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.pointsRemain}
+                    onChange={(e) => setFormData({ ...formData, pointsRemain: e.target.value })}
+                    placeholder="e.g., 5000"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
                     disabled={loading}
                   />
@@ -206,7 +297,7 @@ const CreateEventPage = () => {
                   </Button>
                 </Link>
                 <Button type="submit" className="flex-1" disabled={loading}>
-                  {loading ? 'Creating...' : 'Create Event'}
+                  {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Event' : 'Create Event')}
                 </Button>
               </div>
             </form>
@@ -218,4 +309,3 @@ const CreateEventPage = () => {
 }
 
 export default CreateEventPage
-

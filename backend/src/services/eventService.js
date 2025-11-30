@@ -65,7 +65,7 @@ async function createEvent(data, createdBy) {
 /**
  * Get events with filters
  */
-async function getEvents(filters, page, limit, isManager) {
+async function getEvents(filters, page, limit, isManager, currentUserId = null) {
   // Validate filters
   if (filters.started !== undefined && filters.ended !== undefined) {
     throw new Error('Cannot filter by both started and ended');
@@ -79,6 +79,13 @@ async function getEvents(filters, page, limit, isManager) {
     // For regular users, don't include description in list view
     if (!isManager) {
       delete mapped.description;
+    }
+
+    // Check if current user is RSVP'd to this event
+    if (currentUserId && event.rsvps) {
+      mapped.isRsvped = event.rsvps.some(rsvp => rsvp.userId === currentUserId && rsvp.status === 'yes');
+    } else {
+      mapped.isRsvped = false;
     }
 
     return mapped;
@@ -110,7 +117,16 @@ async function getEventById(eventId, userId, userRole) {
     }
   }
 
-  return mapEventToResponse(event, isManagerOrHigher || isOrganizer);
+  const result = mapEventToResponse(event, isManagerOrHigher || isOrganizer);
+  
+  // Check if current user is RSVP'd to this event
+  if (userId && event.rsvps) {
+    result.isRsvped = event.rsvps.some(rsvp => rsvp.userId === userId && rsvp.status === 'yes');
+  } else {
+    result.isRsvped = false;
+  }
+
+  return result;
 }
 
 /**

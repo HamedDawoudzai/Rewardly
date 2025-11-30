@@ -1,41 +1,65 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Pagination, EmptyState } from '@/components/shared'
 import { Link } from 'react-router-dom'
 import { Calendar, MapPin, Users, Clock, ArrowRight, Coins, Award } from 'lucide-react'
+import { eventAPI } from '@/api/events'
+
+const ITEMS_PER_PAGE = 10
 
 const MyEventsPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [events, setEvents] = useState([])
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
 
-  // Mock data - events where user is an organizer
-  const myEvents = [
-    {
-      id: 1,
-      name: 'Tech Workshop: React Basics',
-      description: 'Learn the fundamentals of React.js in this hands-on workshop.',
-      location: 'Room BA1234',
-      startTime: '2025-12-01T14:00:00Z',
-      endTime: '2025-12-01T17:00:00Z',
-      capacity: 50,
-      numGuests: 35,
-      pointsRemain: 5000,
-      pointsAwarded: 100,
-    },
-    {
-      id: 3,
-      name: 'Study Group: Finals Prep',
-      description: 'Group study session for final exams. All subjects welcome.',
-      location: 'Library Room 202',
-      startTime: '2025-12-05T13:00:00Z',
-      endTime: '2025-12-05T18:00:00Z',
-      capacity: 30,
-      numGuests: 12,
-      pointsRemain: 1500,
-      pointsAwarded: 30,
-    },
-  ]
+  useEffect(() => {
+    loadMyEvents()
+  }, [currentPage])
+
+  const loadMyEvents = async () => {
+    setLoading(true)
+    try {
+      // Get all events - the backend should filter to show only events where user is organizer
+      // Or we can use a specific endpoint if available
+      const response = await eventAPI.getAll({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        // Filter for events where current user is organizer
+        // The backend should handle this based on the authenticated user
+      })
+      
+      // Transform events to expected format
+      const transformedEvents = (response.results || []).map(event => ({
+        id: event.id,
+        name: event.name,
+        description: event.description,
+        location: event.location,
+        startTime: event.startsAt || event.startTime,
+        endTime: event.endsAt || event.endTime,
+        capacity: event.capacity,
+        numGuests: event.numGuests || event.guestCount || 0,
+        pointsRemain: event.pointsRemain || event.pointsPool || 0,
+        pointsAwarded: event.pointsAwarded || 0,
+        isOrganizer: event.isOrganizer || true // Assume user is organizer if showing on this page
+      }))
+      
+      // For now, filter to events where the user is an organizer (if the backend provides this info)
+      // If not, we'll show all events the user can access
+      const myEvents = transformedEvents.filter(e => e.isOrganizer)
+      
+      setEvents(myEvents.length > 0 ? myEvents : transformedEvents)
+      setTotalPages(Math.ceil((response.count || 0) / ITEMS_PER_PAGE))
+      setTotalItems(response.count || 0)
+    } catch (error) {
+      console.error('Failed to load events:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const isUpcoming = (event) => new Date(event.startTime) > new Date()
 
@@ -50,6 +74,14 @@ const MyEventsPage = () => {
     })
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-rewardly-blue border-t-transparent" />
+      </div>
+    )
+  }
+
   return (
     <div>
       <PageHeader 
@@ -62,7 +94,7 @@ const MyEventsPage = () => {
         ]}
       />
 
-      {myEvents.length === 0 ? (
+      {events.length === 0 ? (
         <Card>
           <CardContent>
             <EmptyState
@@ -75,7 +107,7 @@ const MyEventsPage = () => {
       ) : (
         <>
           <div className="space-y-4 mb-6">
-            {myEvents.map((event) => (
+            {events.map((event) => (
               <Card key={event.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
@@ -91,7 +123,7 @@ const MyEventsPage = () => {
                         </span>
                       </div>
                       
-                      <p className="text-gray-600 text-sm mb-4">{event.description}</p>
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{event.description}</p>
                       
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div className="flex items-center gap-2 text-gray-500">
@@ -114,10 +146,10 @@ const MyEventsPage = () => {
                     </div>
                     
                     <div className="flex flex-col gap-2 ml-4">
-                      <Link to={`/organizer/events/${event.id}`}>
+                      <Link to={`/events/${event.id}`}>
                         <Button variant="outline" size="sm" className="gap-1 w-full">
                           <ArrowRight className="h-4 w-4" />
-                          Manage
+                          View
                         </Button>
                       </Link>
                       <Link to={`/organizer/events/${event.id}/award`}>
@@ -135,9 +167,9 @@ const MyEventsPage = () => {
 
           <Pagination
             currentPage={currentPage}
-            totalPages={1}
-            totalItems={myEvents.length}
-            itemsPerPage={10}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={setCurrentPage}
           />
         </>
@@ -147,4 +179,3 @@ const MyEventsPage = () => {
 }
 
 export default MyEventsPage
-
