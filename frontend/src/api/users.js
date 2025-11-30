@@ -2,13 +2,11 @@ import { apiFetch } from './api';
 
 /**
  * Admin User API (Cashier / Manager / Superuser)
- * For managing users, user lists, verification, activation, and role management
+ * For managing users, lists, roles, activation, verification
  */
 export const usersAPI = {
   /**
    * List all users (Manager+)
-   * @param {Object} params  – optional filters:
-   * { page, limit, name, role, verified, activated }
    */
   getAll: async (params = {}) => {
     const query = new URLSearchParams(params).toString();
@@ -16,14 +14,14 @@ export const usersAPI = {
   },
 
   /**
-   * Get user by ID (Cashier+)
+   * Get a user by ID (Cashier+)
    */
   getById: async (userId) => {
     return apiFetch(`/users/${userId}`);
   },
 
   /**
-   * Create new user (Cashier+)
+   * Create a new user (Manager+)
    */
   create: async (data) => {
     return apiFetch('/users', {
@@ -34,6 +32,7 @@ export const usersAPI = {
 
   /**
    * Update any user fields (Manager+)
+   * Includes role changes, verification, activation, name/email edits
    */
   update: async (userId, data) => {
     return apiFetch(`/users/${userId}`, {
@@ -44,6 +43,7 @@ export const usersAPI = {
 
   /**
    * Update user role (Superuser only)
+   * Provided separately in case of role-specific UIs
    */
   updateRole: async (userId, role) => {
     return apiFetch(`/users/${userId}`, {

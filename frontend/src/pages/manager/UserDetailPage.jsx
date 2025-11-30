@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,17 +17,39 @@ import {
   UserX,
 } from "lucide-react";
 import { usersAPI } from "@/api/users";
+import { getUser } from "@/utils/auth";
 import EditUserModal from "@/components/modals/EditUserModal";
 import ChangeRoleModal from "@/components/modals/ChangeRoleModal";
 
 const UserDetailPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [errorMessage, setErrorMessage] = useState("");
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
+
+  const sessionUser = getUser();
+
+  const ROLE_RANK = {
+    regular: 1,
+    cashier: 2,
+    manager: 3,
+    superuser: 4,
+  };
+
+  const myRole = sessionUser?.role || "regular";
+  const myRank = ROLE_RANK[myRole] || 1;
+  const isSuperuser = myRole === "superuser";
+
+  const showError = (msg) => {
+    setErrorMessage(msg);
+    setTimeout(() => setErrorMessage(""), 4000);
+  };
 
   useEffect(() => {
     loadUser();
@@ -35,11 +57,28 @@ const UserDetailPage = () => {
 
   const loadUser = async () => {
     setLoading(true);
+    setErrorMessage("");
     try {
       const data = await usersAPI.getById(id);
       setUser(data);
     } catch (err) {
       console.error("Failed to load user:", err);
+      
+      // Extract error message from various possible structures
+      const errorMsg = err?.message || err?.data?.message || err?.data?.error || "Failed to load user";
+      const status = err?.status || err?.data?.status;
+      
+      // If it's a 403 Forbidden (can't view higher-ranked user), show message and redirect
+      if (status === 403 || err?.data?.error === "Forbidden") {
+        const forbiddenMsg = err?.data?.message || "You cannot view users with higher privileges.";
+        showError(forbiddenMsg);
+        // Redirect back to users list after 2 seconds
+        setTimeout(() => {
+          navigate("/manager/users");
+        }, 2000);
+      } else {
+        showError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -52,25 +91,35 @@ const UserDetailPage = () => {
       await loadUser();
     } catch (err) {
       console.error("Failed to update user:", err);
+      showError(err.message || "Action failed");
     } finally {
       setSaving(false);
     }
   };
 
-  const verifyUser = () => updateUser({ verified: true });
+  const verifyUser = () => {
+    // Superusers can modify anyone
+    if (!isSuperuser && myRank <= ROLE_RANK[user.role]) {
+      showError("You cannot modify a user with higher or equal role.");
+      return;
+    }
+    updateUser({ verified: true });
+  };
 
-  // FIXED VERSION
   const toggleActivation = async () => {
+    // Superusers can modify anyone
+    if (!isSuperuser && myRank <= ROLE_RANK[user.role]) {
+      showError("You cannot modify a user with higher or equal role.");
+      return;
+    }
+
     setSaving(true);
     try {
       await usersAPI.update(id, { isActivated: !user.isActivated });
-
-      setUser(prev => ({ ...prev, isActivated: !prev.isActivated }));
-
       await loadUser();
     } catch (err) {
       console.error("Failed to toggle activation:", err);
-      alert("Failed to update activation status");
+      showError("Failed to update activation status");
     } finally {
       setSaving(false);
     }
@@ -89,6 +138,11 @@ const UserDetailPage = () => {
   if (loading || !user) {
     return <div className="p-10 text-center text-gray-500">Loading user...</div>;
   }
+
+  const targetRank = ROLE_RANK[user.role] || 1;
+
+  // Superusers can modify anyone, others must have higher rank
+  const cannotModify = !isSuperuser && myRank <= targetRank;
 
   return (
     <div>
@@ -112,8 +166,15 @@ const UserDetailPage = () => {
 
             <Button
               variant="outline"
-              onClick={() => setShowEditModal(true)}
               className="gap-2"
+              disabled={cannotModify}
+              onClick={() => {
+                if (cannotModify) {
+                  showError("You cannot modify a user with higher or equal role.");
+                  return;
+                }
+                setShowEditModal(true);
+              }}
             >
               <Edit2 className="h-4 w-4" />
               Edit User
@@ -121,6 +182,12 @@ const UserDetailPage = () => {
           </div>
         }
       />
+
+      {errorMessage && (
+        <div className="mb-4 p-3 rounded bg-red-100 text-red-700 border border-red-300 text-sm">
+          {errorMessage}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card>
@@ -239,8 +306,14 @@ const UserDetailPage = () => {
                   <Button
                     variant="outline"
                     className="gap-2"
-                    disabled={saving}
-                    onClick={verifyUser}
+                    disabled={saving || cannotModify}
+                    onClick={() => {
+                      if (cannotModify) {
+                        showError("You cannot modify a user with higher or equal role.");
+                        return;
+                      }
+                      verifyUser();
+                    }}
                   >
                     <UserCheck className="h-4 w-4" />
                     Verify User
@@ -250,8 +323,14 @@ const UserDetailPage = () => {
                 <Button
                   variant="outline"
                   className="gap-2"
-                  disabled={saving}
-                  onClick={() => setShowRoleModal(true)}
+                  disabled={saving || cannotModify}
+                  onClick={() => {
+                    if (cannotModify) {
+                      showError("You cannot modify a user with higher or equal role.");
+                      return;
+                    }
+                    setShowRoleModal(true);
+                  }}
                 >
                   <Shield className="h-4 w-4" />
                   Change Role
@@ -260,8 +339,14 @@ const UserDetailPage = () => {
                 <Button
                   variant="outline"
                   className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50"
-                  disabled={saving}
-                  onClick={toggleActivation}
+                  disabled={saving || cannotModify}
+                  onClick={() => {
+                    if (cannotModify) {
+                      showError("You cannot modify a user with higher or equal role.");
+                      return;
+                    }
+                    toggleActivation();
+                  }}
                 >
                   <UserX className="h-4 w-4" />
                   {user.isActivated ? "Deactivate" : "Activate"}

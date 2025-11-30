@@ -1,0 +1,10 @@
+{
+  "watch": ["src", "index.js"],
+  "ext": "js,json",
+  "ignore": ["node_modules", "prisma/migrations", "*.test.js", "*.spec.js"],
+  "exec": "node index.js 3000",
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
+

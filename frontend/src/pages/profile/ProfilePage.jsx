@@ -84,15 +84,21 @@ const ProfilePage = () => {
       );
 
       setPasswordSuccess("Password changed successfully.");
-      // Optionally close modal after a short delay, but for now we just clear fields
+      // Clear fields and close modal after a short delay
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPasswordSuccess("");
+      }, 1500);
     } catch (err) {
       console.error("Failed to change password:", err);
-      setPasswordError(err?.message || "Failed to change password.");
+      // Extract error message from API response
+      const errorMsg = err?.message || err?.data?.error || err?.data?.message || "Failed to change password.";
+      setPasswordError(errorMsg);
     } finally {
       setChangingPassword(false);
     }
@@ -268,6 +274,9 @@ const ProfilePage = () => {
                     }))
                   }
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Must be 8-20 characters with uppercase, lowercase, number, and special character
+                </p>
               </div>
 
               <div>

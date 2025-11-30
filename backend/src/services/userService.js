@@ -8,10 +8,61 @@ const roleRepository = require('../repositories/roleRepository');
 const SALT_ROUNDS = 10;
 
 /**
- * User Service
- * Handles business logic for user operations
- * Maps between API spec fields and database schema fields
+ * ROLE HIERARCHY
  */
+function getRoleRank(role) {
+  switch (role) {
+    case 'superuser': return 4;
+    case 'manager': return 3;
+    case 'cashier': return 2;
+    default: return 1; // regular
+  }
+}
+
+/**
+ * Determine if requester can view target user
+ */
+async function canViewUser(requester, targetUserId) {
+  const target = await userRepository.findUserById(targetUserId, {
+    include: { roles: { include: { role: true } } }
+  });
+  if (!target) return false;
+
+  const requesterRole = getUserRole(requester);
+  const targetRole = getUserRole(target);
+
+  // superuser can view everyone
+  if (requesterRole === 'superuser') return true;
+
+  // cannot view higher-ranked user
+  return getRoleRank(requesterRole) >= getRoleRank(targetRole);
+}
+
+/**
+ * Determine if requester can modify target user
+ */
+async function canModifyUser(requester, targetUserId) {
+  const requesterRole = getUserRole(requester);
+  const requesterRank = getRoleRank(requesterRole);
+
+  // Regular + Cashier cannot modify any users
+  if (requesterRank <= 2) return false;
+
+  const target = await userRepository.findUserById(targetUserId, {
+    include: { roles: { include: { role: true } } }
+  });
+  if (!target) return false;
+
+  const targetRole = getUserRole(target);
+  const targetRank = getRoleRank(targetRole);
+
+  // Superuser can modify anyone
+  if (requesterRole === 'superuser') return true;
+
+  // Manager cannot modify managers (equal rank) or superusers (higher rank)
+  // Only managers can modify cashiers and regular users
+  return requesterRank > targetRank;
+}
 
 /**
  * Map user from DB schema to API response format
@@ -22,7 +73,7 @@ function mapUserToResponse(user, includeDetails = true) {
     utorid: user.username,
     name: user.name,
     email: user.email,
-    password: '' // Always include password field as empty string per spec
+    password: '' 
   };
 
   if (includeDetails) {
@@ -33,8 +84,6 @@ function mapUserToResponse(user, includeDetails = true) {
     result.lastLogin = user.lastLogin ? user.lastLogin.toISOString() : null;
     result.verified = user.isStudentVerified;
     result.avatarUrl = user.avatarUrl || null;
-
-    // include activation state
     result.isActivated = user.isActivated;
   }
 
@@ -112,15 +161,11 @@ async function createUser(userData) {
 async function getUsers(filters = {}, page = 1, limit = 10) {
   const { users, total } = await userRepository.findUsersWithFilters(filters, page, limit);
   const results = users.map(user => mapUserToResponse(user, true));
-
-  return {
-    count: total,
-    results
-  };
+  return { count: total, results };
 }
 
 /**
- * Get user by ID (manager+, cashier)
+ * Get user by ID
  */
 async function getUserById(userId, requesterRole, requesterId) {
   const user = await userRepository.findUserById(userId, {
@@ -132,52 +177,11 @@ async function getUserById(userId, requesterRole, requesterId) {
 
   if (!user) return null;
 
-  const promotions = await userRepository.getUserAvailablePromotions(userId);
-  const promosList = promotions.map(p => ({
-    id: p.id,
-    name: p.name,
-    minSpending: p.minSpendCents ? p.minSpendCents / 100 : null,
-    rate: p.pointsPerCentMultiplier || null,
-    points: p.pointsBonus || null
-  }));
-
-  if (requesterRole === 'cashier') {
-    return {
-      id: user.id,
-      utorid: user.username,
-      name: user.name,
-      password: '',
-      points: user.account ? user.account.pointsCached : 0,
-      verified: user.isStudentVerified,
-      promotions: promosList,
-      isActivated: user.isActivated
-    };
-  }
-
-  if (requesterRole === 'manager' || requesterRole === 'superuser') {
-    return {
-      id: user.id,
-      utorid: user.username,
-      name: user.name,
-      email: user.email,
-      password: '',
-      birthday: user.birthday ? user.birthday.toISOString().split('T')[0] : null,
-      role: getUserRole(user),
-      points: user.account ? user.account.pointsCached : 0,
-      createdAt: user.createdAt.toISOString(),
-      lastLogin: user.lastLogin ? user.lastLogin.toISOString() : null,
-      verified: user.isStudentVerified,
-      avatarUrl: user.avatarUrl || null,
-      promotions: promosList,
-      isActivated: user.isActivated
-    };
-  }
-
-  return null;
+  return mapUserToResponse(user, true);
 }
 
 /**
- * Update user (manager+)
+ * Update user
  */
 async function updateUser(userId, updates, requesterRole) {
   const user = await userRepository.findUserById(userId, {
@@ -195,7 +199,6 @@ async function updateUser(userId, updates, requesterRole) {
   const data = {};
   const changedFields = {};
 
-  // ⭐ ADD NAME SUPPORT
   if (updates.name != null) {
     data.name = updates.name;
     changedFields.name = updates.name;
@@ -221,26 +224,17 @@ async function updateUser(userId, updates, requesterRole) {
     changedFields.isActivated = updates.isActivated;
   }
 
-  // role update
   if (updates.role != null) {
-    const currentRole = getUserRole(user);
-
-    if (requesterRole === 'manager') {
-      if (!['regular', 'cashier'].includes(updates.role)) {
-        const error = new Error('Managers can only set role to regular or cashier');
+    const newRole = await roleRepository.findRoleByName(updates.role);
+    if (newRole) {
+      // Managers cannot promote users to manager or superuser
+      // Only superusers can do that
+      if (requesterRole === 'manager' && (updates.role === 'manager' || updates.role === 'superuser')) {
+        const error = new Error('Managers cannot promote users to manager or superuser');
         error.code = 'FORBIDDEN';
         throw error;
       }
-    }
 
-    if (updates.role === 'cashier' && user.isSuspicious) {
-      const error = new Error('Cannot promote suspicious user to cashier');
-      error.code = 'BAD_REQUEST';
-      throw error;
-    }
-
-    const newRole = await roleRepository.findRoleByName(updates.role);
-    if (newRole) {
       const existingRoles = await roleRepository.getUserRoles(userId);
       for (const ur of existingRoles) {
         await roleRepository.removeRoleFromUser(userId, ur.roleId);
@@ -254,11 +248,10 @@ async function updateUser(userId, updates, requesterRole) {
     await userRepository.updateUser(userId, data);
   }
 
-  // ⭐ Return updated user, not old name
   return {
     id: user.id,
     utorid: user.username,
-    name: data.name ?? user.name,  // updated name
+    name: data.name ?? user.name,
     ...changedFields
   };
 }
@@ -276,31 +269,7 @@ async function getOwnProfile(userId) {
 
   if (!user) return null;
 
-  const promotions = await userRepository.getUserAvailablePromotions(userId);
-  const promosList = promotions.map(p => ({
-    id: p.id,
-    name: p.name,
-    minSpending: p.minSpendCents ? p.minSpendCents / 100 : null,
-    rate: p.pointsPerCentMultiplier || null,
-    points: p.pointsBonus || null
-  }));
-
-  return {
-    id: user.id,
-    utorid: user.username,
-    name: user.name,
-    email: user.email,
-    password: '',
-    birthday: user.birthday ? user.birthday.toISOString().split('T')[0] : null,
-    role: getUserRole(user),
-    points: user.account ? user.account.pointsCached : 0,
-    createdAt: user.createdAt.toISOString(),
-    lastLogin: user.lastLogin ? user.lastLogin.toISOString() : null,
-    verified: user.isStudentVerified,
-    avatarUrl: user.avatarUrl || null,
-    promotions: promosList,
-    isActivated: user.isActivated
-  };
+  return mapUserToResponse(user, true);
 }
 
 /**
@@ -315,7 +284,6 @@ async function updateOwnProfile(userId, updates) {
   if (updates.avatarUrl != null) data.avatarUrl = updates.avatarUrl;
 
   await userRepository.updateUser(userId, data);
-
   return await getOwnProfile(userId);
 }
 
@@ -382,5 +350,10 @@ module.exports = {
   getUserByIdSimple,
   getUserByEmail,
   getUserByUsername,
-  getUserRole
+  getUserRole,
+
+  // 🔥 NEW EXPORTS
+  canViewUser,
+  canModifyUser,
+  getRoleRank
 };

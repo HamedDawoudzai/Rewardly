@@ -74,6 +74,8 @@ const UserRolesPage = () => {
 
     } catch (err) {
       console.error("Failed to update user role:", err)
+      // Could add error state here if needed
+      alert(err?.message || err?.data?.error || "Failed to update user role.")
     } finally {
       setUpdating(false)
     }

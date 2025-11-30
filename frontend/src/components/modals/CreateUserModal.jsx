@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { usersAPI } from "@/api/users";
 import { Button } from "@/components/ui/button";
+import { getUser } from "@/utils/auth";
 
 const CreateUserModal = ({ onClose, onCreated }) => {
+  const currentUser = getUser();
+  const isSuperuser = currentUser?.role === "superuser";
+
   const [form, setForm] = useState({
     utorid: "",
     name: "",
@@ -22,28 +26,29 @@ const CreateUserModal = ({ onClose, onCreated }) => {
     setLoading(true);
 
     try {
-      // 1. CREATE USER (backend probably ignores role)
+      // 1. Create user first
       const createdUser = await usersAPI.create({
         utorid: form.utorid,
         name: form.name,
         email: form.email,
-        role: "regular",   // backend default
+        role: "regular", // backend default
       });
 
-      // Ensure we got the user id
       const userId = createdUser?.id || createdUser?.data?.id;
       if (!userId) {
         throw new Error("User created but no ID returned");
       }
 
-      // 2. FIX — update the role using SAME LOGIC as ChangeRoleModal
+      // 2. Apply role change
       await usersAPI.update(userId, { role: form.role });
 
       onCreated();
       onClose();
     } catch (err) {
-      console.error(err);
-      setErrorMsg("Failed to create user.");
+      console.error("Create user error:", err);
+
+      const errorMsg = err?.message || err?.data?.error || err?.data?.message || "Failed to create user.";
+      setErrorMsg(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -53,6 +58,12 @@ const CreateUserModal = ({ onClose, onCreated }) => {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-6">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
         <h2 className="text-xl font-semibold mb-4">Create User</h2>
+
+        {errorMsg && (
+          <p className="text-red-600 text-sm mb-3 bg-red-50 p-2 rounded border border-red-200">
+            {errorMsg}
+          </p>
+        )}
 
         <div className="mb-3">
           <label className="block text-sm mb-1">UTORid</label>
@@ -97,14 +108,14 @@ const CreateUserModal = ({ onClose, onCreated }) => {
           >
             <option value="regular">Regular</option>
             <option value="cashier">Cashier</option>
-            <option value="manager">Manager</option>
-            <option value="superuser">Superuser</option>
+            {isSuperuser && (
+              <>
+                <option value="manager">Manager</option>
+                <option value="superuser">Superuser</option>
+              </>
+            )}
           </select>
         </div>
-
-        {errorMsg && (
-          <p className="text-red-500 text-sm mb-2">{errorMsg}</p>
-        )}
 
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={onClose}>

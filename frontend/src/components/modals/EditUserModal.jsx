@@ -18,10 +18,12 @@ const EditUserModal = ({ user, onClose, onUpdated }) => {
   const [name, setName] = useState(getFullName());
   const [email, setEmail] = useState(user.email || "");
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setErrorMsg("");
 
     try {
       await usersAPI.update(user.id, { name, email });
@@ -30,6 +32,9 @@ const EditUserModal = ({ user, onClose, onUpdated }) => {
       onClose();    // close modal
     } catch (err) {
       console.error("Failed to update user:", err);
+
+      const errorMsg = err?.message || err?.data?.error || err?.data?.message || "Failed to update user.";
+      setErrorMsg(errorMsg);
     } finally {
       setSaving(false);
     }
@@ -40,6 +45,12 @@ const EditUserModal = ({ user, onClose, onUpdated }) => {
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
         
         <h2 className="text-xl font-semibold mb-4">Edit User</h2>
+
+        {errorMsg && (
+          <p className="text-red-600 text-sm mb-3 bg-red-50 p-2 rounded border border-red-200">
+            {errorMsg}
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
