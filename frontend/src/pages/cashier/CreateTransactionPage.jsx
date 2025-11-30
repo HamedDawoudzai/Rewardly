@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CreditCard, User, DollarSign, FileText, AlertCircle, CheckCircle } from 'lucide-react'
+import { adminTransactionAPI } from '@/api/transactions'
 
 const CreateTransactionPage = () => {
   const [formData, setFormData] = useState({
@@ -33,11 +34,14 @@ const CreateTransactionPage = () => {
     }
 
     try {
-      // TODO: API call to create transaction
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      const pointsEarned = Math.floor(parseFloat(formData.spent) * 10)
+      const response = await adminTransactionAPI.createPurchase({
+        utorid: formData.utorid,
+        spent: formData.spent,
+        remark: formData.remark || null
+      })
+      
       setResult({
-        points: pointsEarned,
+        points: response.earned || 0,
         spent: formData.spent,
         user: formData.utorid
       })
@@ -159,7 +163,7 @@ const CreateTransactionPage = () => {
                   </div>
                   {formData.spent && (
                     <p className="text-sm text-rewardly-blue mt-1">
-                      Customer will earn ~{Math.floor(parseFloat(formData.spent) * 10)} points
+                      Customer will earn ~{Math.round(parseFloat(formData.spent) / 0.25)} points
                     </p>
                   )}
                 </div>

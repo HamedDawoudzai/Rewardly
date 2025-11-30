@@ -2,18 +2,11 @@ import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout'
 import { DataTable } from '@/components/shared'
 import { Link } from 'react-router-dom'
-import { Eye, AlertTriangle, Flag } from 'lucide-react'
+import { Eye, AlertTriangle, Flag, FlagOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { adminTransactionAPI } from '@/api/transactions'
 
-// ============================================================
-// TODO: Replace mock data imports with API calls
-// ============================================================
-import { 
-  mockTransactions, 
-  getMockPaginatedData,
-  simulateApiDelay,
-  PAGINATION_DEFAULTS 
-} from '@/mock'
+const ITEMS_PER_PAGE = 10
 
 const AllTransactionsPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
@@ -23,7 +16,7 @@ const AllTransactionsPage = () => {
   const [totalItems, setTotalItems] = useState(0)
   const [filters, setFilters] = useState({
     type: '',
-    userId: '',
+    name: '',
     createdBy: '',
     suspicious: ''
   })
@@ -32,33 +25,39 @@ const AllTransactionsPage = () => {
     loadTransactions()
   }, [currentPage, filters])
 
-  // ============================================================
-  // TODO: Replace with actual API call
-  // Example:
-  //   const response = await transactionAPI.getAll({
-  //     page: currentPage,
-  //     limit: PAGINATION_DEFAULTS.itemsPerPage,
-  //     type: filters.type,
-  //     userId: filters.userId,
-  //     createdBy: filters.createdBy,
-  //     suspicious: filters.suspicious
-  //   })
-  // ============================================================
   const loadTransactions = async () => {
     setLoading(true)
     try {
-      await simulateApiDelay(300) // Remove this when using real API
+      const params = {
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+      }
       
-      // TODO: Replace with actual API call
-      const { data, pagination } = getMockPaginatedData(
-        mockTransactions, 
-        currentPage, 
-        PAGINATION_DEFAULTS.itemsPerPage
-      )
+      // Add filters if they have values
+      if (filters.type) params.type = filters.type
+      if (filters.name) params.name = filters.name
+      if (filters.createdBy) params.createdBy = filters.createdBy
+      if (filters.suspicious !== '') params.suspicious = filters.suspicious
       
-      setTransactions(data)
-      setTotalPages(pagination.totalPages)
-      setTotalItems(pagination.totalItems)
+      const response = await adminTransactionAPI.getAll(params)
+      
+      // Transform data to match expected format
+      const transformedData = (response.results || []).map(tx => ({
+        id: tx.id,
+        type: tx.type,
+        amount: tx.amount || tx.earned || tx.redeemed || tx.sent || 0,
+        spent: tx.spent || null,
+        userId: tx.utorid || tx.sender || 'Unknown',
+        createdBy: tx.createdBy || 'System',
+        suspicious: tx.suspicious || false,
+        createdAt: tx.createdAt,
+        status: tx.status,
+        remark: tx.remark
+      }))
+      
+      setTransactions(transformedData)
+      setTotalPages(Math.ceil((response.count || 0) / ITEMS_PER_PAGE))
+      setTotalItems(response.count || 0)
     } catch (error) {
       console.error('Failed to load transactions:', error)
     } finally {
@@ -66,14 +65,14 @@ const AllTransactionsPage = () => {
     }
   }
 
-  // ============================================================
-  // TODO: Implement flag suspicious API call
-  // Example:
-  //   await transactionAPI.flagSuspicious(transactionId)
-  // ============================================================
-  const handleFlagSuspicious = async (transactionId) => {
-    console.log('TODO: Flag transaction as suspicious:', transactionId)
-    // TODO: Call API and reload
+  const handleFlagSuspicious = async (transactionId, currentSuspicious) => {
+    try {
+      await adminTransactionAPI.toggleSuspicious(transactionId, !currentSuspicious)
+      // Reload transactions to reflect the change
+      loadTransactions()
+    } catch (error) {
+      console.error('Failed to toggle suspicious flag:', error)
+    }
   }
 
   const getTypeStyles = (type) => {
@@ -155,16 +154,15 @@ const AllTransactionsPage = () => {
               <Eye className="h-4 w-4" />
             </Button>
           </Link>
-          {!row.suspicious && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="gap-1 text-orange-500 hover:text-orange-700"
-              onClick={() => handleFlagSuspicious(row.id)}
-            >
-              <Flag className="h-4 w-4" />
-            </Button>
-          )}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={`gap-1 ${row.suspicious ? 'text-green-500 hover:text-green-700' : 'text-orange-500 hover:text-orange-700'}`}
+            onClick={() => handleFlagSuspicious(row.id, row.suspicious)}
+            title={row.suspicious ? 'Remove suspicious flag' : 'Mark as suspicious'}
+          >
+            {row.suspicious ? <FlagOff className="h-4 w-4" /> : <Flag className="h-4 w-4" />}
+          </Button>
         </div>
       )
     }
@@ -188,12 +186,12 @@ const AllTransactionsPage = () => {
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">User Name</label>
         <input
           type="text"
-          value={filters.userId}
-          onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
-          placeholder="UTORid"
+          value={filters.name}
+          onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+          placeholder="Name or UTORid"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         />
       </div>
@@ -223,7 +221,7 @@ const AllTransactionsPage = () => {
         <Button 
           variant="outline" 
           className="w-full"
-          onClick={() => setFilters({ type: '', userId: '', createdBy: '', suspicious: '' })}
+          onClick={() => setFilters({ type: '', name: '', createdBy: '', suspicious: '' })}
         >
           Clear
         </Button>
@@ -253,7 +251,7 @@ const AllTransactionsPage = () => {
         currentPage={currentPage}
         totalPages={totalPages}
         totalItems={totalItems}
-        itemsPerPage={PAGINATION_DEFAULTS.itemsPerPage}
+        itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={setCurrentPage}
         filters={filterPanel}
         emptyMessage="No transactions found"

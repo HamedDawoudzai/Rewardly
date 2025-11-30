@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ClipboardList, Hash, AlertCircle, CheckCircle, Gift, User } from 'lucide-react'
+import { ClipboardList, Hash, AlertCircle, CheckCircle, Gift, User, Calendar } from 'lucide-react'
+import { adminTransactionAPI } from '@/api/transactions'
 
 const ProcessRedemptionPage = () => {
   const [redemptionId, setRedemptionId] = useState('')
@@ -10,7 +11,9 @@ const ProcessRedemptionPage = () => {
   const [redemption, setRedemption] = useState(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [processedResult, setProcessedResult] = useState(null)
 
+  // Step 1: Look up the redemption
   const handleLookup = async (e) => {
     e.preventDefault()
     setError('')
@@ -23,32 +26,53 @@ const ProcessRedemptionPage = () => {
       return
     }
 
+    const id = parseInt(redemptionId)
+    if (isNaN(id)) {
+      setError('Please enter a valid numeric ID')
+      setLoading(false)
+      return
+    }
+
     try {
-      // TODO: API call to look up redemption
-      await new Promise(resolve => setTimeout(resolve, 500))
-      // Mock data
+      // Use the new cashier-specific preview endpoint
+      const response = await adminTransactionAPI.getRedemptionPreview(id)
+      
       setRedemption({
-        id: redemptionId,
-        userId: 'john_doe',
-        userName: 'John Doe',
-        amount: 500,
-        status: 'pending',
-        createdAt: '2025-11-28T10:30:00Z'
+        id: response.id,
+        utorid: response.utorid,
+        amount: response.amount,
+        remark: response.remark,
+        createdAt: response.createdAt
       })
     } catch (err) {
-      setError('Redemption not found')
+      const message = err.message || 'Failed to look up redemption'
+      if (message.includes('not found')) {
+        setError('Redemption not found. Please check the ID and try again.')
+      } else if (message.includes('already been processed')) {
+        setError('This redemption has already been processed.')
+      } else if (message.includes('not a redemption')) {
+        setError('This transaction is not a redemption request.')
+      } else {
+        setError(message)
+      }
     } finally {
       setLoading(false)
     }
   }
 
+  // Step 2: Process the redemption
   const handleProcess = async () => {
     setLoading(true)
     setError('')
 
     try {
-      // TODO: API call to process redemption
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await adminTransactionAPI.processRedemption(redemption.id)
+      
+      setProcessedResult({
+        id: response.id,
+        utorid: response.utorid || redemption.utorid,
+        amount: response.redeemed || redemption.amount
+      })
       setSuccess(true)
     } catch (err) {
       setError(err.message || 'Failed to process redemption')
@@ -62,6 +86,7 @@ const ProcessRedemptionPage = () => {
     setRedemption(null)
     setSuccess(false)
     setError('')
+    setProcessedResult(null)
   }
 
   return (
@@ -96,21 +121,21 @@ const ProcessRedemptionPage = () => {
                   type="text"
                   value={redemptionId}
                   onChange={(e) => setRedemptionId(e.target.value)}
-                  placeholder="Enter or scan redemption ID"
+                  placeholder="Enter redemption transaction ID"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
-                  disabled={loading || success}
+                  disabled={loading || success || redemption}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  You can scan the customer's redemption QR code or manually enter the ID
+                  Enter the transaction ID from the customer's redemption QR code
                 </p>
               </div>
               
               <Button 
                 type="submit" 
                 className="w-full"
-                disabled={loading || success}
+                disabled={loading || success || redemption}
               >
-                {loading ? 'Looking up...' : 'Look Up Redemption'}
+                {loading && !redemption ? 'Looking up...' : 'Look Up Redemption'}
               </Button>
             </form>
           </CardContent>
@@ -128,7 +153,7 @@ const ProcessRedemptionPage = () => {
           </Card>
         )}
 
-        {/* Redemption Details */}
+        {/* Redemption Preview (Step 2) */}
         {redemption && !success && (
           <Card>
             <CardHeader>
@@ -137,14 +162,14 @@ const ProcessRedemptionPage = () => {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-gray-500">Redemption ID</label>
-                  <p className="font-mono text-gray-900">{redemption.id}</p>
+                  <label className="text-sm text-gray-500">Transaction ID</label>
+                  <p className="font-mono text-gray-900">#{redemption.id}</p>
                 </div>
                 <div>
                   <label className="text-sm text-gray-500">Status</label>
                   <p>
-                    <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium capitalize">
-                      {redemption.status}
+                    <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
+                      Pending
                     </span>
                   </p>
                 </div>
@@ -152,22 +177,30 @@ const ProcessRedemptionPage = () => {
                   <label className="text-sm text-gray-500 flex items-center gap-1">
                     <User className="h-4 w-4" /> Customer
                   </label>
-                  <p className="text-gray-900">{redemption.userName}</p>
-                  <p className="text-xs text-gray-500">@{redemption.userId}</p>
+                  <p className="text-gray-900 font-medium">@{redemption.utorid}</p>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-500">Created</label>
+                  <label className="text-sm text-gray-500 flex items-center gap-1">
+                    <Calendar className="h-4 w-4" /> Requested
+                  </label>
                   <p className="text-gray-900">
                     {new Date(redemption.createdAt).toLocaleString()}
                   </p>
                 </div>
               </div>
 
-              <div className="text-center py-4 bg-rewardly-light-blue rounded-lg">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Gift className="h-6 w-6 text-rewardly-blue" />
+              {redemption.remark && (
+                <div>
+                  <label className="text-sm text-gray-500">Remark</label>
+                  <p className="text-gray-700 italic">"{redemption.remark}"</p>
                 </div>
-                <p className="text-3xl font-bold text-rewardly-blue">{redemption.amount}</p>
+              )}
+
+              <div className="text-center py-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Gift className="h-6 w-6 text-blue-600" />
+                </div>
+                <p className="text-3xl font-bold text-blue-600">{redemption.amount}</p>
                 <p className="text-gray-600">Points to redeem</p>
               </div>
 
@@ -185,7 +218,7 @@ const ProcessRedemptionPage = () => {
                   onClick={handleProcess}
                   disabled={loading}
                 >
-                  {loading ? 'Processing...' : 'Process Redemption'}
+                  {loading ? 'Processing...' : 'Confirm & Process'}
                 </Button>
               </div>
             </CardContent>
@@ -193,7 +226,7 @@ const ProcessRedemptionPage = () => {
         )}
 
         {/* Success */}
-        {success && (
+        {success && processedResult && (
           <Card className="bg-green-50 border-green-200">
             <CardContent className="pt-6">
               <div className="text-center">
@@ -203,9 +236,24 @@ const ProcessRedemptionPage = () => {
                 <h3 className="text-xl font-semibold text-green-900 mb-2">
                   Redemption Processed!
                 </h3>
-                <p className="text-green-700 mb-4">
-                  Successfully processed {redemption?.amount} points for {redemption?.userName}
-                </p>
+                
+                <div className="bg-white rounded-lg p-4 mb-4 text-left">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="text-gray-500">Transaction ID:</div>
+                    <div className="font-mono">#{processedResult.id}</div>
+                    <div className="text-gray-500">Customer:</div>
+                    <div className="font-medium">@{processedResult.utorid}</div>
+                  </div>
+                </div>
+                
+                <div className="bg-green-100 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <Gift className="h-5 w-5 text-green-700" />
+                  </div>
+                  <p className="text-3xl font-bold text-green-700">{processedResult.amount} pts</p>
+                  <p className="text-sm text-green-600">successfully redeemed</p>
+                </div>
+                
                 <Button onClick={handleReset}>
                   Process Another Redemption
                 </Button>
@@ -219,4 +267,3 @@ const ProcessRedemptionPage = () => {
 }
 
 export default ProcessRedemptionPage
-
