@@ -12,11 +12,6 @@ const promotionRepository = require('../repositories/promotionRepository');
  */
 function validatePromotionTiming(startTime, endTime) {
   const start = new Date(startTime);
-  // const now = new Date();
-
-  // if (start < now) {
-  //   throw new Error('Start time must be in the future');
-  // }
 
   if (endTime) {
     const end = new Date(endTime);
@@ -149,9 +144,9 @@ async function updatePromotion(promotionId, updates) {
     const newStart = updates.startTime ? new Date(updates.startTime) : promotion.startsAt;
     const newEnd = updates.endTime ? new Date(updates.endTime) : promotion.endsAt;
 
-    if (newStart < now) {
-      throw new Error('Start time cannot be in the past');
-    }
+    // if (newStart < now) {
+    //   throw new Error('Start time cannot be in the past');
+    // }
 
     if (newEnd && newStart >= newEnd) {
       throw new Error('End time must be after start time');
