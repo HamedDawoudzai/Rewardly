@@ -5,15 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ShieldCheck, UserCog, AlertCircle, CheckCircle } from 'lucide-react'
 
-// ============================================================
-// TODO: Replace mock data imports with API calls
-// ============================================================
-import { 
-  mockUsers, 
-  getMockPaginatedData,
-  simulateApiDelay,
-  PAGINATION_DEFAULTS 
-} from '@/mock'
+import { usersAPI } from '@/api/users'
+import { PAGINATION_DEFAULTS } from '@/mock'
 
 const UserRolesPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
@@ -21,6 +14,7 @@ const UserRolesPage = () => {
   const [users, setUsers] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+
   const [selectedUser, setSelectedUser] = useState(null)
   const [newRole, setNewRole] = useState('')
   const [updating, setUpdating] = useState(false)
@@ -30,61 +24,56 @@ const UserRolesPage = () => {
     loadUsers()
   }, [currentPage])
 
-  // ============================================================
-  // TODO: Replace with actual API call
-  // Example:
-  //   const response = await userAPI.getAll({
-  //     page: currentPage,
-  //     limit: PAGINATION_DEFAULTS.itemsPerPage
-  //   })
-  // ============================================================
+  // -----------------------------------------------------------
+  // Load users (REAL API)
+  // -----------------------------------------------------------
   const loadUsers = async () => {
     setLoading(true)
     try {
-      await simulateApiDelay(300) // Remove this when using real API
-      
-      // TODO: Replace with actual API call
-      const { data, pagination } = getMockPaginatedData(
-        mockUsers, 
-        currentPage, 
-        PAGINATION_DEFAULTS.itemsPerPage
-      )
-      
-      setUsers(data)
+      const params = {
+        page: currentPage,
+        limit: PAGINATION_DEFAULTS.itemsPerPage
+      }
+
+      const response = await usersAPI.getAll(params)
+
+      const results = response.results || response.data || []
+      const pagination = response.pagination || {
+        totalPages: 1,
+        totalItems: results.length
+      }
+
+      setUsers(results)
       setTotalPages(pagination.totalPages)
       setTotalItems(pagination.totalItems)
-    } catch (error) {
-      console.error('Failed to load users:', error)
+
+    } catch (err) {
+      console.error("Failed to load users:", err)
     } finally {
       setLoading(false)
     }
   }
 
-  // ============================================================
-  // TODO: Replace with actual API call
-  // Example:
-  //   await userAPI.updateRole(selectedUser.id, newRole)
-  //   loadUsers() // Reload after update
-  // ============================================================
+  // -----------------------------------------------------------
+  // Update user role
+  // -----------------------------------------------------------
   const handlePromote = async () => {
     if (!selectedUser || !newRole) return
-    
+
     setUpdating(true)
     try {
-      await simulateApiDelay(1000) // Remove this when using real API
-      
-      // TODO: Replace with actual API call
-      console.log('TODO: Update user role:', selectedUser.id, newRole)
-      
+      await usersAPI.update(selectedUser.id, { role: newRole })
+
       setSuccess(true)
       setTimeout(() => {
         setSelectedUser(null)
         setNewRole('')
         setSuccess(false)
-        loadUsers() // Reload to show updated data
-      }, 2000)
+        loadUsers()
+      }, 1500)
+
     } catch (err) {
-      console.error('Failed to update role:', err)
+      console.error("Failed to update user role:", err)
     } finally {
       setUpdating(false)
     }
@@ -95,7 +84,7 @@ const UserRolesPage = () => {
       regular: 'bg-gray-100 text-gray-700',
       cashier: 'bg-blue-100 text-blue-700',
       manager: 'bg-purple-100 text-purple-700',
-      superuser: 'bg-red-100 text-red-700',
+      superuser: 'bg-red-100 text-red-700'
     }
     return styles[role] || styles.regular
   }
@@ -104,9 +93,7 @@ const UserRolesPage = () => {
     {
       key: 'utorid',
       label: 'UTORid',
-      render: (value) => (
-        <span className="font-mono font-medium text-gray-900">@{value}</span>
-      )
+      render: (v) => <span className="font-mono font-medium">@{v}</span>
     },
     {
       key: 'name',
@@ -115,16 +102,14 @@ const UserRolesPage = () => {
     {
       key: 'email',
       label: 'Email',
-      render: (value) => (
-        <span className="text-gray-500">{value}</span>
-      )
+      render: (v) => <span className="text-gray-500">{v}</span>
     },
     {
       key: 'role',
       label: 'Current Role',
-      render: (value) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getRoleStyles(value)}`}>
-          {value}
+      render: (v) => (
+        <span className={`px-2 py-1 rounded-full text-xs capitalize ${getRoleStyles(v)}`}>
+          {v}
         </span>
       )
     },
@@ -133,9 +118,9 @@ const UserRolesPage = () => {
       label: '',
       sortable: false,
       render: (_, row) => (
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           className="gap-1"
           onClick={() => {
             setSelectedUser(row)
@@ -152,8 +137,8 @@ const UserRolesPage = () => {
 
   return (
     <div>
-      <PageHeader 
-        title="User Roles" 
+      <PageHeader
+        title="User Roles"
         subtitle="Promote users to managers or superusers"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
@@ -163,15 +148,16 @@ const UserRolesPage = () => {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* User List */}
+
+        {/* User Table */}
         <div className="lg:col-span-2">
           <DataTable
             columns={columns}
             data={users}
             loading={loading}
-            searchable={true}
+            searchable
             searchPlaceholder="Search by name or UTORid..."
-            pagination={true}
+            pagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalItems}
@@ -189,6 +175,7 @@ const UserRolesPage = () => {
               Assign Role
             </CardTitle>
           </CardHeader>
+
           <CardContent>
             {!selectedUser ? (
               <div className="text-center py-8 text-gray-500">
@@ -200,10 +187,14 @@ const UserRolesPage = () => {
                 <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
-                <p className="font-medium text-green-700">Role Updated!</p>
+                <p className="font-medium text-green-700">
+                  Role Updated!
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
+
+                {/* Selected User Block */}
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-500">Selected User</p>
                   <p className="font-semibold text-gray-900">{selectedUser.name}</p>
@@ -215,15 +206,16 @@ const UserRolesPage = () => {
                   </p>
                 </div>
 
+                {/* New Role */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     New Role
                   </label>
+
                   <select
                     value={newRole}
                     onChange={(e) => setNewRole(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
-                    disabled={updating}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue"
                   >
                     <option value="">Select a role...</option>
                     <option value="regular">Regular User</option>
@@ -233,30 +225,33 @@ const UserRolesPage = () => {
                   </select>
                 </div>
 
+                {/* Superuser Warning */}
                 {newRole === 'superuser' && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 text-red-700 text-sm">
-                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex gap-2">
+                    <AlertCircle className="h-4 w-4" />
                     <p>
-                      <strong>Warning:</strong> Superusers have full access to all system features including the ability to promote other users.
+                      <strong>Warning:</strong> Superusers have full system access.
                     </p>
                   </div>
                 )}
 
+                {/* Buttons */}
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="flex-1"
                     onClick={() => setSelectedUser(null)}
                     disabled={updating}
                   >
                     Cancel
                   </Button>
-                  <Button 
+
+                  <Button
                     className="flex-1"
-                    onClick={handlePromote}
                     disabled={updating || !newRole || newRole === selectedUser.role}
+                    onClick={handlePromote}
                   >
-                    {updating ? 'Updating...' : 'Update Role'}
+                    {updating ? "Updating..." : "Update Role"}
                   </Button>
                 </div>
               </div>
