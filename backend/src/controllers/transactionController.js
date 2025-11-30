@@ -325,6 +325,49 @@ async function createRedemptionHandler(req, res) {
   }
 }
 
+/**
+ * GET /transactions/:transactionId/redemption
+ * Preview a pending redemption (Cashier+)
+ * Returns limited info so cashier can verify before processing
+ */
+async function getRedemptionPreviewHandler(req, res) {
+  try {
+    const transactionId = parseInt(req.params.transactionId);
+    if (isNaN(transactionId)) {
+      return res.status(400).json({ error: 'Invalid transaction ID' });
+    }
+
+    const transaction = await transactionService.getTransactionById(transactionId);
+    
+    if (!transaction) {
+      return res.status(404).json({ error: 'Redemption not found' });
+    }
+
+    // Only allow viewing redemption transactions
+    if (transaction.type !== 'redemption') {
+      return res.status(400).json({ error: 'This transaction is not a redemption request' });
+    }
+
+    // Only allow viewing pending redemptions (not already processed)
+    if (transaction.redeemed !== undefined) {
+      return res.status(400).json({ error: 'This redemption has already been processed' });
+    }
+
+    // Return limited preview info for the cashier
+    return res.status(200).json({
+      id: transaction.id,
+      type: transaction.type,
+      utorid: transaction.utorid,
+      amount: transaction.amount,
+      remark: transaction.remark,
+      createdAt: transaction.createdAt
+    });
+  } catch (error) {
+    console.error('Error getting redemption preview:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   createTransactionHandler,
   listTransactionsHandler,
@@ -333,6 +376,7 @@ module.exports = {
   processRedemptionHandler,
   createTransferHandler,
   createRedemptionHandler,
-  getMyTransactionsHandler
+  getMyTransactionsHandler,
+  getRedemptionPreviewHandler
 };
 
