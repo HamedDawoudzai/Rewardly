@@ -155,7 +155,8 @@ async function listEventsHandler(req, res) {
     }
     const finalLimit = limit || 10;
 
-    const result = await eventService.getEvents(filters, page, finalLimit, isManager);
+    // Pass current user ID to check RSVP status
+    const result = await eventService.getEvents(filters, page, finalLimit, isManager, req.user.id);
     return res.status(200).json(result);
   } catch (error) {
     if (error.message.includes('Cannot filter')) {

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Award, Users, User, Coins, AlertCircle, CheckCircle } from 'lucide-react'
+import { eventAPI } from '@/api/events'
 
 const AwardPointsPage = () => {
   const { id } = useParams()
@@ -11,16 +12,32 @@ const AwardPointsPage = () => {
   const [utorid, setUtorid] = useState('')
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingEvent, setLoadingEvent] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [event, setEvent] = useState(null)
 
-  // Mock event data
-  const event = {
-    id: parseInt(id),
-    name: 'Tech Workshop: React Basics',
-    pointsRemain: 5000,
-    numGuests: 35,
-    defaultPoints: 100
+  useEffect(() => {
+    loadEvent()
+  }, [id])
+
+  const loadEvent = async () => {
+    setLoadingEvent(true)
+    try {
+      const response = await eventAPI.getById(id)
+      setEvent({
+        id: response.id,
+        name: response.name,
+        pointsRemain: response.pointsRemain || response.pointsPool || 0,
+        numGuests: response.numGuests || response.guestCount || 0,
+        pointsAwarded: response.pointsAwarded || 100
+      })
+    } catch (err) {
+      console.error('Failed to load event:', err)
+      setError('Failed to load event')
+    } finally {
+      setLoadingEvent(false)
+    }
   }
 
   const handleAwardSingle = async (e) => {
@@ -35,16 +52,21 @@ const AwardPointsPage = () => {
       setError('Please enter a valid amount')
       return
     }
-    if (parseInt(amount) > event.pointsRemain) {
+    if (event && parseInt(amount) > event.pointsRemain) {
       setError('Insufficient points remaining for this event')
       return
     }
 
     setLoading(true)
     try {
-      // TODO: API call to award points to single user
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await eventAPI.awardPoints(id, {
+        utorid: utorid,
+        amount: parseInt(amount),
+        type: 'single'
+      })
       setSuccess(true)
+      // Reload event to get updated points
+      await loadEvent()
     } catch (err) {
       setError(err.message || 'Failed to award points')
     } finally {
@@ -59,17 +81,23 @@ const AwardPointsPage = () => {
       setError('Please enter a valid amount per guest')
       return
     }
-    const totalNeeded = parseInt(amount) * event.numGuests
-    if (totalNeeded > event.pointsRemain) {
-      setError(`Insufficient points. Need ${totalNeeded.toLocaleString()} but only ${event.pointsRemain.toLocaleString()} remaining`)
-      return
+    if (event) {
+      const totalNeeded = parseInt(amount) * event.numGuests
+      if (totalNeeded > event.pointsRemain) {
+        setError(`Insufficient points. Need ${totalNeeded.toLocaleString()} but only ${event.pointsRemain.toLocaleString()} remaining`)
+        return
+      }
     }
 
     setLoading(true)
     try {
-      // TODO: API call to award points to all guests
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await eventAPI.awardPoints(id, {
+        amount: parseInt(amount),
+        type: 'all'
+      })
       setSuccess(true)
+      // Reload event to get updated points
+      await loadEvent()
     } catch (err) {
       setError(err.message || 'Failed to award points')
     } finally {
@@ -82,6 +110,26 @@ const AwardPointsPage = () => {
     setAmount('')
     setSuccess(false)
     setError('')
+  }
+
+  if (loadingEvent) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-rewardly-blue border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (!event) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+        <p className="text-gray-500 mb-4">Event not found</p>
+        <Link to="/organizer/events">
+          <Button variant="outline">Back to My Events</Button>
+        </Link>
+      </div>
+    )
   }
 
   return (
@@ -128,7 +176,7 @@ const AwardPointsPage = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Default per Guest</span>
-                <span className="font-medium">{event.defaultPoints} pts</span>
+                <span className="font-medium">{event.pointsAwarded} pts</span>
               </div>
             </div>
           </CardContent>
@@ -213,7 +261,7 @@ const AwardPointsPage = () => {
                         max={event.pointsRemain}
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        placeholder={`e.g., ${event.defaultPoints}`}
+                        placeholder={`e.g., ${event.pointsAwarded}`}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
                         disabled={loading}
                       />
@@ -238,7 +286,7 @@ const AwardPointsPage = () => {
                         min="1"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        placeholder={`e.g., ${event.defaultPoints}`}
+                        placeholder={`e.g., ${event.pointsAwarded}`}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
                         disabled={loading}
                       />
@@ -268,4 +316,3 @@ const AwardPointsPage = () => {
 }
 
 export default AwardPointsPage
-
