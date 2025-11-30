@@ -12,11 +12,11 @@ const promotionRepository = require('../repositories/promotionRepository');
  */
 function validatePromotionTiming(startTime, endTime) {
   const start = new Date(startTime);
-  const now = new Date();
+  // const now = new Date();
 
-  if (start < now) {
-    throw new Error('Start time must be in the future');
-  }
+  // if (start < now) {
+  //   throw new Error('Start time must be in the future');
+  // }
 
   if (endTime) {
     const end = new Date(endTime);

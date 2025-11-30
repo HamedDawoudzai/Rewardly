@@ -5,20 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Pagination, EmptyState } from '@/components/shared'
 import { Link } from 'react-router-dom'
 import { Megaphone, Calendar, Tag, ArrowRight, Percent } from 'lucide-react'
+import { promotionAPI } from '@/api/promotions'
 
-// ============================================================
-// TODO: Replace mock data imports with API calls
-// ============================================================
-import { 
-  mockPromotions, 
-  getMockPaginatedData,
-  simulateApiDelay,
-  PAGINATION_DEFAULTS 
-} from '@/mock'
+const ITEMS_PER_PAGE = 4
 
 const PromotionsPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [promotions, setPromotions] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
@@ -27,40 +21,42 @@ const PromotionsPage = () => {
     loadPromotions()
   }, [currentPage])
 
-  // ============================================================
-  // TODO: Replace with actual API call
-  // Example:
-  //   const response = await promotionAPI.getAll({
-  //     page: currentPage,
-  //     limit: PAGINATION_DEFAULTS.itemsPerPage
-  //   })
-  // ============================================================
-  const loadPromotions = async () => {
-    setLoading(true)
-    try {
-      await simulateApiDelay(300) // Remove this when using real API
-      
-      // TODO: Replace with actual API call
-      const { data, pagination } = getMockPaginatedData(
-        mockPromotions, 
-        currentPage, 
-        4 // Show 4 per page for card layout
-      )
-      
-      setPromotions(data)
-      setTotalPages(pagination.totalPages)
-      setTotalItems(pagination.totalItems)
-    } catch (error) {
-      console.error('Failed to load promotions:', error)
-    } finally {
-      setLoading(false)
-    }
+const loadPromotions = async () => {
+  setLoading(true)
+  setError('')
+
+  try {
+    const response = await promotionAPI.getAll({
+      page: currentPage,
+      limit: ITEMS_PER_PAGE,
+    })
+
+    // Backend returns: { count, results }
+    const data = response.results || []
+    const total = response.count || data.length
+
+    setPromotions(data)
+
+    // Compute pagination manually
+    setTotalItems(total)
+    setTotalPages(Math.max(1, Math.ceil(total / ITEMS_PER_PAGE)))
+
+  } catch (err) {
+    console.error('Failed to load promotions:', err)
+    setError(err.message || 'Failed to load promotions')
+    setPromotions([])
+    setTotalPages(1)
+    setTotalItems(0)
+  } finally {
+    setLoading(false)
   }
+}
+
 
   const isActive = (promo) => {
     const now = new Date()
-    const start = new Date(promo.startDate)
-    const end = promo.endDate ? new Date(promo.endDate) : null
+    const start = new Date(promo.startTime)
+    const end = promo.endTime ? new Date(promo.endTime) : null
     return now >= start && (!end || now <= end)
   }
 
@@ -82,6 +78,14 @@ const PromotionsPage = () => {
           { label: 'Promotions' }
         ]}
       />
+
+      {error && (
+        <Card className="mb-4">
+          <CardContent>
+            <p className="text-sm text-red-600">{error}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {promotions.length === 0 ? (
         <Card>
@@ -136,9 +140,9 @@ const PromotionsPage = () => {
                     <div className="flex items-center gap-2 text-gray-500">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {new Date(promo.startDate).toLocaleDateString()} 
-                        {promo.endDate && ` - ${new Date(promo.endDate).toLocaleDateString()}`}
-                        {!promo.endDate && ' - No end date'}
+                        {new Date(promo.startTime).toLocaleDateString()} 
+                        {promo.endTime && ` - ${new Date(promo.endTime).toLocaleDateString()}`}
+                        {!promo.endTime && ' - No end date'}
                       </span>
                     </div>
                     
@@ -172,7 +176,7 @@ const PromotionsPage = () => {
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalItems}
-            itemsPerPage={4}
+            itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={setCurrentPage}
           />
         </>
