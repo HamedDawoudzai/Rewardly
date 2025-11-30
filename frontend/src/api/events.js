@@ -34,21 +34,19 @@ export const eventAPI = {
 
   /**
    * Create a new event (Manager+)
-   * @param {Object} data - { name, description, location, startTime, endTime, capacity, pointsAwarded, published }
+   * @param {Object} data - { name, description, location, startTime, endTime, capacity, points }
    */
   create: async (data) => {
     return apiFetch('/events', {
       method: 'POST',
       body: JSON.stringify({
         name: data.name,
-        description: data.description || null,
+        description: data.description || 'No description provided',
         location: data.location,
         startTime: data.startTime,
         endTime: data.endTime,
         capacity: data.capacity ? parseInt(data.capacity) : null,
-        pointsRemain: data.pointsRemain ? parseInt(data.pointsRemain) : 0,
-        pointsAwarded: data.pointsAwarded ? parseInt(data.pointsAwarded) : 0,
-        published: data.published || false,
+        points: data.points ? parseInt(data.points) : 100, // Default to 100 points
       }),
     });
   },
@@ -67,8 +65,7 @@ export const eventAPI = {
     if (data.startTime !== undefined) updateData.startTime = data.startTime;
     if (data.endTime !== undefined) updateData.endTime = data.endTime;
     if (data.capacity !== undefined) updateData.capacity = data.capacity ? parseInt(data.capacity) : null;
-    if (data.pointsRemain !== undefined) updateData.pointsRemain = parseInt(data.pointsRemain);
-    if (data.pointsAwarded !== undefined) updateData.pointsAwarded = parseInt(data.pointsAwarded);
+    if (data.points !== undefined) updateData.points = parseInt(data.points);
     if (data.published !== undefined) updateData.published = data.published;
 
     return apiFetch(`/events/${id}`, {
