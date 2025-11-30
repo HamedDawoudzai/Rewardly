@@ -8,7 +8,8 @@ const {
   listTransactionsHandler,
   getTransactionHandler,
   toggleSuspiciousHandler,
-  processRedemptionHandler
+  processRedemptionHandler,
+  getRedemptionPreviewHandler
 } = require('../controllers/transactionController');
 const { authenticate } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
@@ -22,6 +23,10 @@ router.post('/', authenticate, requirePermission('CASHIER_CREATE_PURCHASE'), cre
 
 // GET /transactions - List transactions (Manager+)
 router.get('/', authenticate, requirePermission('MANAGER_VIEW_ALL_TRANSACTIONS'), listTransactionsHandler);
+
+// GET /transactions/:transactionId/redemption - Preview pending redemption (Cashier+)
+// This allows cashiers to see redemption details before processing, without full transaction access
+router.get('/:transactionId/redemption', authenticate, requirePermission('CASHIER_PROCESS_REDEMPTION'), getRedemptionPreviewHandler);
 
 // GET /transactions/:transactionId - Get transaction (Manager+)
 router.get('/:transactionId', authenticate, requirePermission('MANAGER_VIEW_ALL_TRANSACTIONS'), getTransactionHandler);

@@ -53,16 +53,96 @@ export const transactionAPI = {
 
 /**
  * Admin Transaction API (Cashier/Manager)
- * NOTE: This section should be implemented by Package 4 team member
- * Leaving placeholder exports to prevent import errors
+ * For cashiers and managers to create/manage transactions
  */
 export const adminTransactionAPI = {
-  // TODO: Implement in Package 4
-  getAll: async () => { throw new Error('Not implemented - Package 4'); },
-  getById: async () => { throw new Error('Not implemented - Package 4'); },
-  createPurchase: async () => { throw new Error('Not implemented - Package 4'); },
-  createAdjustment: async () => { throw new Error('Not implemented - Package 4'); },
-  toggleSuspicious: async () => { throw new Error('Not implemented - Package 4'); },
-  processRedemption: async () => { throw new Error('Not implemented - Package 4'); },
+  /**
+   * Get all transactions with pagination & filters (Manager+)
+   * @param {Object} params - { page, limit, type, name, createdBy, suspicious, promotionId, relatedId, amount, operator }
+   */
+  getAll: async (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        query.append(key, value);
+      }
+    });
+    const queryString = query.toString();
+    return apiFetch(`/transactions${queryString ? `?${queryString}` : ''}`);
+  },
+
+  /**
+   * Get transaction by ID (Manager+)
+   * @param {number} id - Transaction ID
+   */
+  getById: async (id) => {
+    return apiFetch(`/transactions/${id}`);
+  },
+
+  /**
+   * Create a purchase transaction (Cashier+)
+   * @param {Object} data - { utorid, spent, promotionIds?, remark? }
+   */
+  createPurchase: async (data) => {
+    return apiFetch('/transactions', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'purchase',
+        utorid: data.utorid,
+        spent: parseFloat(data.spent),
+        promotionIds: data.promotionIds || [],
+        remark: data.remark || null,
+      }),
+    });
+  },
+
+  /**
+   * Create an adjustment transaction (Manager+)
+   * @param {Object} data - { utorid, amount, relatedId?, remark? }
+   */
+  createAdjustment: async (data) => {
+    return apiFetch('/transactions', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'adjustment',
+        utorid: data.utorid,
+        amount: parseInt(data.amount),
+        relatedId: data.relatedId || null,
+        remark: data.remark || null,
+      }),
+    });
+  },
+
+  /**
+   * Toggle suspicious flag on a transaction (Manager+)
+   * @param {number} id - Transaction ID
+   * @param {boolean} suspicious - New suspicious status
+   */
+  toggleSuspicious: async (id, suspicious) => {
+    return apiFetch(`/transactions/${id}/suspicious`, {
+      method: 'PATCH',
+      body: JSON.stringify({ suspicious }),
+    });
+  },
+
+  /**
+   * Process a redemption transaction (Cashier+)
+   * @param {number} id - Transaction ID
+   */
+  processRedemption: async (id) => {
+    return apiFetch(`/transactions/${id}/processed`, {
+      method: 'PATCH',
+      body: JSON.stringify({ processed: true }),
+    });
+  },
+
+  /**
+   * Get redemption preview for cashier (Cashier+)
+   * Returns limited info about a pending redemption
+   * @param {number} id - Transaction ID
+   */
+  getRedemptionPreview: async (id) => {
+    return apiFetch(`/transactions/${id}/redemption`);
+  },
 };
 
