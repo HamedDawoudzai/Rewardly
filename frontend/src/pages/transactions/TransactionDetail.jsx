@@ -1,16 +1,29 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, User, Calendar, Hash, FileText, Tag, AlertTriangle, ArrowRight } from 'lucide-react'
-import { transactionAPI } from '@/api/transactions'
+import { transactionAPI, adminTransactionAPI } from '@/api/transactions'
+import { useAuth } from '@/hooks/useAuth'
 
 const TransactionDetail = () => {
   const { id } = useParams()
+  const { user } = useAuth()
+  const location = useLocation()
   const [loading, setLoading] = useState(true)
   const [transaction, setTransaction] = useState(null)
   const [error, setError] = useState(null)
+
+  // Detect if we're on the manager route
+  const isManagerRoute = location.pathname.startsWith('/manager/')
+  
+  // Check if user has manager+ access
+  const isManagerOrAbove = user?.role === 'manager' || user?.role === 'superuser'
+  
+  // Determine back link based on route context
+  const backLink = isManagerRoute ? '/manager/transactions' : '/transactions'
+  const backLabel = isManagerRoute ? 'All Transactions' : 'My Transactions'
 
   useEffect(() => {
     loadTransaction()
@@ -20,7 +33,15 @@ const TransactionDetail = () => {
     setLoading(true)
     setError(null)
     try {
-      const tx = await transactionAPI.getById(id)
+      let tx
+      if (isManagerRoute && isManagerOrAbove) {
+        // Manager route with manager permissions - use admin API
+        tx = await adminTransactionAPI.getById(id)
+      } else {
+        // Personal transactions - filter from own transactions
+        tx = await transactionAPI.getById(id)
+      }
+      
       if (!tx) {
         setError('Transaction not found')
       } else {
@@ -72,8 +93,8 @@ const TransactionDetail = () => {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">{error || 'Transaction not found'}</p>
-        <Link to="/transactions">
-          <Button variant="outline" className="mt-4">Back to Transactions</Button>
+        <Link to={backLink}>
+          <Button variant="outline" className="mt-4">Back to {backLabel}</Button>
         </Link>
       </div>
     )
@@ -81,21 +102,31 @@ const TransactionDetail = () => {
 
   const pointsAmount = getPointsAmount()
 
+  // Build breadcrumbs based on context
+  const breadcrumbs = isManagerRoute
+    ? [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Manager' },
+        { label: 'Transactions', href: '/manager/transactions' },
+        { label: `#${id}` }
+      ]
+    : [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Transactions', href: '/transactions' },
+        { label: `#${id}` }
+      ]
+
   return (
     <div>
       <PageHeader 
         title={`Transaction #${id}`}
         subtitle="View transaction details"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Transactions', href: '/transactions' },
-          { label: `#${id}` }
-        ]}
+        breadcrumbs={breadcrumbs}
         actions={
-          <Link to="/transactions">
+          <Link to={backLink}>
             <Button variant="outline" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Back to Transactions
+              Back to {backLabel}
             </Button>
           </Link>
         }

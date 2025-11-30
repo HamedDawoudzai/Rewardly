@@ -45,14 +45,14 @@ const AllTransactionsPage = () => {
       const transformedData = (response.results || []).map(tx => ({
         id: tx.id,
         type: tx.type,
-        amount: tx.pointsCalculated || tx.pointsPosted || 0,
-        spent: tx.totalCents ? tx.totalCents / 100 : null,
-        userId: tx.account?.user?.username || 'Unknown',
-        createdBy: tx.createdBy?.username || 'System',
-        suspicious: tx.account?.user?.isSuspicious || false,
+        amount: tx.amount || tx.earned || tx.redeemed || tx.sent || 0,
+        spent: tx.spent || null,
+        userId: tx.utorid || tx.sender || 'Unknown',
+        createdBy: tx.createdBy || 'System',
+        suspicious: tx.suspicious || false,
         createdAt: tx.createdAt,
         status: tx.status,
-        remark: tx.notes
+        remark: tx.remark
       }))
       
       setTransactions(transformedData)
