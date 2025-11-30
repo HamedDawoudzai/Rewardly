@@ -66,7 +66,8 @@ export const eventAPI = {
     if (data.endTime !== undefined) updateData.endTime = data.endTime;
     if (data.capacity !== undefined) updateData.capacity = data.capacity ? parseInt(data.capacity) : null;
     if (data.points !== undefined) updateData.points = parseInt(data.points);
-    if (data.published !== undefined) updateData.published = data.published;
+    // Only send published if it's true (publishing is one-way, can't unpublish)
+    if (data.published === true) updateData.published = true;
 
     return apiFetch(`/events/${id}`, {
       method: 'PATCH',

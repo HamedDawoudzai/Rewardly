@@ -276,11 +276,18 @@ const CreateEventPage = () => {
                   checked={formData.published}
                   onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
                   className="h-4 w-4 text-rewardly-blue focus:ring-rewardly-blue border-gray-300 rounded"
-                  disabled={loading}
+                  disabled={loading || (isEditMode && formData.published)}
                 />
-                <label htmlFor="published" className="text-sm font-medium text-gray-700">
-                  Publish immediately (visible to all users)
-                </label>
+                <div>
+                  <label htmlFor="published" className="text-sm font-medium text-gray-700">
+                    {isEditMode && formData.published 
+                      ? 'Published (cannot be unpublished)' 
+                      : 'Publish immediately (visible to all users)'}
+                  </label>
+                  {!formData.published && (
+                    <p className="text-xs text-gray-500">Once published, this cannot be undone</p>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4">
