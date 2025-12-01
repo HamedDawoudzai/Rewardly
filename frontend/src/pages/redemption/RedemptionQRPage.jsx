@@ -55,6 +55,8 @@ const RedemptionQRPage = () => {
   }
 
   const isProcessed = !!redemption.processedAt
+  // The QR code value is just the transaction ID number
+  const qrValue = String(redemption.id)
 
   return (
     <div>
@@ -97,7 +99,7 @@ const RedemptionQRPage = () => {
                   <div>
                     <p className="font-medium text-orange-900">Pending Processing</p>
                     <p className="text-sm text-orange-700">
-                      This redemption is waiting to be processed by a cashier
+                      Show this QR code to a cashier to complete your redemption
                     </p>
                   </div>
                 </>
@@ -106,22 +108,32 @@ const RedemptionQRPage = () => {
           </CardContent>
         </Card>
 
-        {/* Redemption Details */}
+        {/* Redemption Details & QR Code */}
         <Card>
           <CardContent className="pt-6">
+            {/* Points Amount */}
             <div className="text-center mb-6">
-              <p className="text-3xl font-bold text-rewardly-blue">{Math.abs(redemption.amount)}</p>
+              <p className="text-4xl font-bold text-rewardly-blue">{Math.abs(redemption.amount)}</p>
               <p className="text-gray-500">Points to redeem</p>
             </div>
             
+            {/* QR Code - Only show if not processed */}
             {!isProcessed && (
               <QRCodeDisplay
-                value={`redemption:${redemption.id}`}
-                title="Scan to Process"
-                subtitle={`Transaction #${redemption.id}`}
-                size={200}
+                value={qrValue}
+                title="Redemption ID"
+                subtitle="Cashier will scan this to process"
+                size={220}
               />
             )}
+
+            {/* Transaction ID Display */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg text-center">
+              <p className="text-sm text-gray-500 mb-1">Transaction ID</p>
+              <p className="text-2xl font-bold font-mono text-rewardly-dark-navy">
+                #{redemption.id}
+              </p>
+            </div>
             
             <div className="mt-4 text-center text-sm text-gray-500">
               Created on {new Date(redemption.createdAt).toLocaleString()}
@@ -137,18 +149,20 @@ const RedemptionQRPage = () => {
           </CardContent>
         </Card>
 
+        {/* Instructions - Only show if not processed */}
         {!isProcessed && (
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="pt-6">
               <div className="flex gap-3">
                 <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-medium text-blue-900 mb-1">Instructions</h3>
-                  <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• Show this QR code to a cashier</li>
-                    <li>• The cashier will scan and process your redemption</li>
-                    <li>• You'll receive the equivalent value in store credit or cash</li>
-                  </ul>
+                  <h3 className="font-medium text-blue-900 mb-2">How to redeem</h3>
+                  <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside">
+                    <li>Go to a cashier with this QR code displayed</li>
+                    <li>The cashier will scan the code or enter the ID manually</li>
+                    <li>You'll receive the equivalent value ({Math.abs(redemption.amount)} points = ${(Math.abs(redemption.amount) * 0.01).toFixed(2)})</li>
+                    <li>This page will update once processed</li>
+                  </ol>
                 </div>
               </div>
             </CardContent>
