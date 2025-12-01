@@ -1,15 +1,40 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { User, LogOut, Settings, ChevronDown } from 'lucide-react'
+import { User, LogOut, Settings, ChevronDown, Shield, Briefcase, UserCog } from 'lucide-react'
 import { useState, useRef, useEffect, useContext } from 'react'
 import rewardlyLogo from '@/assets/rewardly_cropped.png'
-import { clearAuth } from '@/utils/auth'
+import { clearAuth, getUser } from '@/utils/auth'
 import { AuthContext } from '@/context/AuthContext'
+import { useRoleView } from '@/context/RoleViewContext'
 
 const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const dropdownRef = useRef(null)
   const navigate = useNavigate()
   const { user } = useContext(AuthContext)
+  const { isRoleView, toggleRoleView } = useRoleView()
+
+  // Determine user's highest role
+  const currentUser = getUser()
+  const userRole = currentUser?.role || ''
+  const isCashier = ['cashier', 'manager', 'superuser'].includes(userRole)
+  const isManager = ['manager', 'superuser'].includes(userRole)
+  const isSuperuser = userRole === 'superuser'
+
+  // Determine the role view label and icon
+  const getRoleViewInfo = () => {
+    if (isSuperuser) {
+      return { label: 'Admin View', icon: Shield, color: 'bg-purple-600 hover:bg-purple-700' }
+    }
+    if (isManager) {
+      return { label: 'Manager View', icon: Briefcase, color: 'bg-blue-600 hover:bg-blue-700' }
+    }
+    if (isCashier) {
+      return { label: 'Cashier View', icon: UserCog, color: 'bg-green-600 hover:bg-green-700' }
+    }
+    return null
+  }
+
+  const roleViewInfo = getRoleViewInfo()
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -44,8 +69,26 @@ const Navbar = () => {
           </span>
         </Link>
 
-        {/* Right side - User menu */}
+        {/* Right side - Role View Button and User menu */}
         <div className="flex items-center gap-4">
+          {/* Role View Toggle Button */}
+          {roleViewInfo && (
+            <button
+              onClick={toggleRoleView}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-all duration-200 ${
+                isRoleView 
+                  ? roleViewInfo.color 
+                  : 'bg-gray-500 hover:bg-gray-600'
+              }`}
+            >
+              <roleViewInfo.icon className="h-4 w-4" />
+              <span className="hidden sm:block">{roleViewInfo.label}</span>
+              {isRoleView && (
+                <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs">ON</span>
+              )}
+            </button>
+          )}
+
           {/* Points Display */}
           <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-rewardly-light-blue rounded-full">
             <span className="text-sm text-rewardly-blue font-medium">
