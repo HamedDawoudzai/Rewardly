@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { User, LogOut, Settings, ChevronDown, Shield, Briefcase, UserCog } from 'lucide-react'
+import { User, LogOut, ChevronDown, Shield, Briefcase, UserCog } from 'lucide-react'
 import { useState, useRef, useEffect, useContext } from 'react'
 import rewardlyLogo from '@/assets/rewardly_cropped.png'
 import { clearAuth, getUser } from '@/utils/auth'
@@ -129,15 +129,6 @@ const Navbar = () => {
                 >
                   <User className="h-4 w-4" />
                   View Profile
-                </Link>
-                
-                <Link
-                  to="/settings"
-                  onClick={() => setIsProfileOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <Settings className="h-4 w-4" />
-                  Settings
                 </Link>
                 
                 <hr className="my-2 border-gray-100" />
