@@ -9,7 +9,6 @@ import {
   ResetPasswordPage,
   Dashboard,
   ProfilePage,
-  SettingsPage,
   TransactionsPage,
   TransactionDetail,
   PromotionsPage,
@@ -51,7 +50,6 @@ function App() {
             {/* Main */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
             
             {/* User Features */}
             <Route path="/transactions" element={<TransactionsPage />} />

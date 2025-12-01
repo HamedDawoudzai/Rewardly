@@ -7,9 +7,6 @@ export { Dashboard } from './dashboard'
 // Profile
 export { ProfilePage } from './profile'
 
-// Settings
-export { SettingsPage } from './settings'
-
 // Transactions
 export { TransactionsPage, TransactionDetail } from './transactions'
 
