@@ -25,7 +25,6 @@ const Sidebar = () => {
   const isCashier = ['cashier', 'manager', 'superuser'].includes(userRole)
   const isManager = ['manager', 'superuser'].includes(userRole)
   const isSuperuser = userRole === 'superuser'
-  const isEventOrganizer = user?.isEventOrganizer || isManager
 
   const navLinkClass = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
@@ -168,20 +167,18 @@ const Sidebar = () => {
           </nav>
         </div>
 
-        {/* Event Organizer Section */}
-        {isEventOrganizer && (
-          <div>
-            <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Event Organizer
-            </p>
-            <nav className="space-y-1">
-              <NavLink to="/organizer/events" className={navLinkClass}>
-                <Calendar className="h-5 w-5" />
-                My Events
-              </NavLink>
-            </nav>
-          </div>
-        )}
+        {/* Organize Section - Available to all users (any user can be an event organizer) */}
+        <div>
+          <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Organize
+          </p>
+          <nav className="space-y-1">
+            <NavLink to="/organizer/events" className={navLinkClass}>
+              <Calendar className="h-5 w-5" />
+              My Events
+            </NavLink>
+          </nav>
+        </div>
       </div>
     </aside>
   )
