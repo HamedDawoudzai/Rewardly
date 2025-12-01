@@ -14,10 +14,8 @@ import {
   Send
 } from 'lucide-react'
 import { transactionAPI } from '@/api/transactions'
+import { eventAPI } from '@/api/events'
 import { AuthContext } from '@/context/AuthContext'
-
-// Mock data for events (Package 3 will replace this)
-import { mockUpcomingEvents } from '@/mock'
 
 const Dashboard = () => {
   const { user, refreshUser } = useContext(AuthContext)
@@ -52,9 +50,10 @@ const Dashboard = () => {
         if (tx.type === 'transfer') {
           // Transfer uses 'sent' field, and it's negative for the sender
           amount = -(tx.sent || 0)
-        } else if (tx.type === 'redemption' && tx.redeemed) {
-          // Processed redemption uses 'redeemed'
-          amount = -(tx.redeemed || tx.amount || 0)
+        } else if (tx.type === 'redemption') {
+          // Redemptions are always negative (points being spent)
+          const redemptionAmount = tx.redeemed || tx.amount || 0
+          amount = -Math.abs(redemptionAmount)
         }
         
         // Format date - handle missing createdAt
@@ -100,15 +99,31 @@ const Dashboard = () => {
         tx => tx.type === 'redemption' && !tx.processedAt && !tx.redeemed
       ).length
 
+      // Fetch events where user has RSVP'd (upcoming)
+      let rsvpedEvents = []
+      try {
+        const eventsResponse = await eventAPI.getAll({ limit: 100 })
+        const allEvents = eventsResponse.results || eventsResponse || []
+        
+        // Filter for events user has RSVP'd to that haven't ended yet
+        rsvpedEvents = allEvents.filter(event => {
+          const isRsvped = event.isRsvped === true
+          const endTime = new Date(event.endTime)
+          const isUpcoming = endTime > now
+          return isRsvped && isUpcoming
+        }).slice(0, 3) // Show max 3 on dashboard
+      } catch (err) {
+        console.error('Failed to load events:', err)
+      }
+
+      setUpcomingEvents(rsvpedEvents)
+
       setStats({
         points: freshUser?.points || user?.points || 0,
         pendingRedemptions,
         transactionsThisMonth: thisMonthCount,
-        upcomingEvents: mockUpcomingEvents.length // TODO: Replace with real events API (Package 3)
+        upcomingEvents: rsvpedEvents.length
       })
-
-      // TODO: Replace with real events API (Package 3)
-      setUpcomingEvents(mockUpcomingEvents)
 
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
@@ -131,6 +146,22 @@ const Dashboard = () => {
       adjustment: 'bg-gray-100 text-gray-700',
     }
     return colors[type] || colors.adjustment
+  }
+
+  const formatEventDate = (startTime) => {
+    if (!startTime) return 'TBD'
+    try {
+      const date = new Date(startTime)
+      if (isNaN(date.getTime())) return 'TBD'
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      })
+    } catch {
+      return 'TBD'
+    }
   }
 
   if (loading) {
@@ -255,7 +286,7 @@ const Dashboard = () => {
                         <p className="text-sm text-gray-500">{tx.date}</p>
                       </div>
                     </div>
-                    <span className={`font-semibold ${tx.amount > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                    <span className={`font-semibold ${tx.amount > 0 ? 'text-green-600' : tx.amount < 0 ? 'text-red-600' : 'text-gray-600'}`}>
                       {tx.amount > 0 ? '+' : ''}{tx.amount} pts
                     </span>
                   </div>
@@ -277,24 +308,26 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             {upcomingEvents.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No upcoming events</p>
+              <p className="text-gray-500 text-center py-4">No upcoming events. Browse events to RSVP!</p>
             ) : (
               <div className="space-y-4">
                 {upcomingEvents.map((event) => (
-                  <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                        <Calendar className="h-5 w-5 text-purple-600" />
+                  <Link key={event.id} to={`/events/${event.id}`}>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                          <Calendar className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{event.name}</p>
+                          <p className="text-sm text-gray-500">{formatEventDate(event.startTime)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{event.name}</p>
-                        <p className="text-sm text-gray-500">{event.date}</p>
-                      </div>
+                      <span className="text-sm font-medium text-rewardly-blue">
+                        +{event.points || event.pointsRemain || 0} pts
+                      </span>
                     </div>
-                    <span className="text-sm font-medium text-rewardly-blue">
-                      +{event.points} pts
-                    </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
