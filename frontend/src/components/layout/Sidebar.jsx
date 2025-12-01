@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   Megaphone,
   ClipboardList,
-  ArrowLeft
+  ArrowLeft,
+  UserPlus
 } from 'lucide-react'
 import { getUser } from '@/utils/auth'
 import { useRoleView } from '@/context/RoleViewContext'
@@ -64,6 +65,10 @@ const Sidebar = () => {
                 <NavLink to="/cashier/redemptions" className={navLinkClass}>
                   <ClipboardList className="h-5 w-5" />
                   Process Redemption
+                </NavLink>
+                <NavLink to="/cashier/users" className={navLinkClass}>
+                  <UserPlus className="h-5 w-5" />
+                  Create User
                 </NavLink>
               </nav>
             </div>
