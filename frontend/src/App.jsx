@@ -6,6 +6,7 @@ import LandingPage from '@/components/LandingPage'
 
 // Pages
 import {
+  ResetPasswordPage,
   Dashboard,
   ProfilePage,
   SettingsPage,
@@ -23,6 +24,7 @@ import {
   ProcessRedemptionPage,
   UsersManagementPage,
   UserDetailPage,
+  CreateUserPage,
   AllTransactionsPage,
   PromotionsManagementPage,
   CreatePromotionPage,
@@ -42,6 +44,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/reset-password/:resetToken" element={<ResetPasswordPage />} />
           
           {/* Protected Routes - Dashboard Layout */}
           <Route element={<DashboardLayout />}>
@@ -87,6 +90,11 @@ function App() {
             <Route path="/manager/users" element={
               <ProtectedRoute requiredRole="manager">
                 <UsersManagementPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/manager/users/new" element={
+              <ProtectedRoute requiredRole="manager">
+                <CreateUserPage />
               </ProtectedRoute>
             } />
             <Route path="/manager/users/:id" element={

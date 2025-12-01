@@ -1,3 +1,6 @@
+// Auth
+export { ResetPasswordPage } from './auth'
+
 // Dashboard
 export { Dashboard } from './dashboard'
 
@@ -32,6 +35,7 @@ export { CreateTransactionPage, ProcessRedemptionPage } from './cashier'
 export { 
   UsersManagementPage, 
   UserDetailPage,
+  CreateUserPage,
   AllTransactionsPage,
   PromotionsManagementPage,
   CreatePromotionPage,
