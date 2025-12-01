@@ -6,6 +6,7 @@ import LandingPage from '@/components/LandingPage'
 
 // Pages
 import {
+  ResetPasswordPage,
   Dashboard,
   ProfilePage,
   SettingsPage,
@@ -23,6 +24,7 @@ import {
   ProcessRedemptionPage,
   UsersManagementPage,
   UserDetailPage,
+  CreateUserPage,
   AllTransactionsPage,
   PromotionsManagementPage,
   CreatePromotionPage,
@@ -42,6 +44,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/reset-password/:resetToken" element={<ResetPasswordPage />} />
           
           {/* Protected Routes - Dashboard Layout */}
           <Route element={<DashboardLayout />}>
@@ -73,6 +76,11 @@ function App() {
             <Route path="/cashier/redemptions" element={
               <ProtectedRoute requiredRole="cashier">
                 <ProcessRedemptionPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/cashier/users" element={
+              <ProtectedRoute requiredRole="cashier">
+                <CreateUserPage />
               </ProtectedRoute>
             } />
             

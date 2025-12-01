@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout";
 import { DataTable } from "@/components/shared";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Eye, UserPlus, CheckCircle, XCircle, Edit2 } from "lucide-react";
 
@@ -10,17 +10,16 @@ import { usersAPI } from "@/api/users";
 import { PAGINATION_DEFAULTS } from "@/mock";
 import { getUser } from "@/utils/auth";
 
-import CreateUserModal from "@/components/modals/CreateUserModal";
 import EditUserModal from "@/components/modals/EditUserModal";
 
 const UsersManagementPage = () => {
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
@@ -296,13 +295,7 @@ const UsersManagementPage = () => {
         actions={
           <Button
             className="gap-2"
-            onClick={() => {
-              if (myRank < 3) {
-                showError("You do not have permission to create users.");
-                return;
-              }
-              setShowCreateModal(true);
-            }}
+            onClick={() => navigate("/cashier/users")}
           >
             <UserPlus className="h-4 w-4" />
             Create User
@@ -332,17 +325,6 @@ const UsersManagementPage = () => {
         filters={filterPanel}
         emptyMessage="No users found"
       />
-
-      {/* Create User Modal */}
-      {showCreateModal && (
-        <CreateUserModal
-          onClose={() => setShowCreateModal(false)}
-          onCreated={() => {
-            setShowCreateModal(false);
-            loadUsers();
-          }}
-        />
-      )}
 
       {/* Edit User Modal */}
       {showEditModal && selectedUser && (

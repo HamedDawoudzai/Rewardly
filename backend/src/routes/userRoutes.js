@@ -126,13 +126,13 @@ router.patch('/me/password', authenticate, changePasswordHandler);
 // MANAGEMENT ROUTES
 // -------------------------------------------------------------
 
-// POST /users  (Manager+)
+// POST /users  (Cashier+)
 router.post(
   '/',
   validateBodyNotEmpty,
   authenticate,
-  requireRankAtLeast('manager'),
-  requirePermission('MANAGER_CREATE_USER'),
+  requireRankAtLeast('cashier'),
+  requirePermission('CASHIER_CREATE_USER'),
   createUserHandler
 );
 
