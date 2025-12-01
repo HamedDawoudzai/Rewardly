@@ -596,10 +596,29 @@ function mapEventToResponse(event, includeAdminFields = false) {
   return result;
 }
 
+/**
+ * Get events organized by user
+ */
+async function getMyOrganizedEvents(userId, page, limit) {
+  const { events, total } = await eventRepository.findEventsByOrganizer(userId, page, limit);
+
+  const results = events.map(event => {
+    const mapped = mapEventToResponse(event, true); // Organizers get full details
+    mapped.isOrganizer = true;
+    return mapped;
+  });
+
+  return {
+    count: total,
+    results
+  };
+}
+
 module.exports = {
   createEvent,
   getEvents,
   getEventById,
+  getMyOrganizedEvents,
   updateEvent,
   deleteEvent,
   addOrganizer,

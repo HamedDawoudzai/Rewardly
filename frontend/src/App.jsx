@@ -29,6 +29,8 @@ import {
   CreateEventPage,
   MyEventsPage,
   AwardPointsPage,
+  OrganizerEditEventPage,
+  ManageGuestsPage,
   UserRolesPage
 } from '@/pages'
 
@@ -67,7 +69,9 @@ function App() {
             
             {/* Event Organizer Routes */}
             <Route path="/organizer/events" element={<MyEventsPage />} />
-            <Route path="/organizer/events/:id" element={<MyEventsPage />} />
+            <Route path="/organizer/events/:id" element={<EventDetail />} />
+            <Route path="/organizer/events/:id/edit" element={<OrganizerEditEventPage />} />
+            <Route path="/organizer/events/:id/guests" element={<ManageGuestsPage />} />
             <Route path="/organizer/events/:id/award" element={<AwardPointsPage />} />
             
             {/* Manager Routes */}

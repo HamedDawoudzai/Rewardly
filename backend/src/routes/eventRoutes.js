@@ -7,6 +7,7 @@ const {
   createEventHandler,
   listEventsHandler,
   getEventHandler,
+  getMyOrganizedEventsHandler,
   updateEventHandler,
   deleteEventHandler,
   addOrganizerHandler,
@@ -29,6 +30,9 @@ router.post('/', authenticate, requirePermission('MANAGER_CREATE_EVENT'), create
 
 // GET /events - List events (Regular+)
 router.get('/', authenticate, listEventsHandler);
+
+// GET /events/organized - Get events where current user is organizer (Regular+)
+router.get('/organized', authenticate, getMyOrganizedEventsHandler);
 
 // GET /events/:eventId - Get event (Regular+)
 router.get('/:eventId', authenticate, getEventHandler);

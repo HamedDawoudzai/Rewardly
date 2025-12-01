@@ -15,10 +15,12 @@ const EventDetail = () => {
   const [rsvpLoading, setRsvpLoading] = useState(false)
   const [isRsvped, setIsRsvped] = useState(false)
 
-  // Detect if we're on the manager route
+  // Detect route context for proper navigation
   const isManagerRoute = location.pathname.startsWith('/manager/')
-  const backLink = isManagerRoute ? '/manager/events' : '/events'
-  const backLabel = isManagerRoute ? 'Manage Events' : 'Events'
+  const isOrganizerRoute = location.pathname.startsWith('/organizer/')
+  
+  const backLink = isManagerRoute ? '/manager/events' : isOrganizerRoute ? '/organizer/events' : '/events'
+  const backLabel = isManagerRoute ? 'Manage Events' : isOrganizerRoute ? 'My Events' : 'Events'
 
   useEffect(() => {
     loadEvent()
