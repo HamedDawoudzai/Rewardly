@@ -10,19 +10,21 @@ import {
   CreditCard,
   ShieldCheck,
   Megaphone,
-  UserCog,
-  ClipboardList
+  ClipboardList,
+  ArrowLeft
 } from 'lucide-react'
 import { getUser } from '@/utils/auth'
+import { useRoleView } from '@/context/RoleViewContext'
 
 const Sidebar = () => {
   const user = getUser()
+  const { isRoleView, exitRoleView } = useRoleView()
   
   // Determine user roles/capabilities
-  const roles = user?.roles || []
-  const isCashier = roles.includes('cashier') || roles.includes('manager') || roles.includes('superuser')
-  const isManager = roles.includes('manager') || roles.includes('superuser')
-  const isSuperuser = roles.includes('superuser')
+  const userRole = user?.role || ''
+  const isCashier = ['cashier', 'manager', 'superuser'].includes(userRole)
+  const isManager = ['manager', 'superuser'].includes(userRole)
+  const isSuperuser = userRole === 'superuser'
   const isEventOrganizer = user?.isEventOrganizer || isManager
 
   const navLinkClass = ({ isActive }) =>
@@ -32,6 +34,91 @@ const Sidebar = () => {
         : 'text-gray-600 hover:bg-rewardly-light-blue hover:text-rewardly-blue'
     }`
 
+  // Role View Sidebar - Shows only role-specific actions
+  if (isRoleView) {
+    return (
+      <aside className="fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="p-4 space-y-6">
+          {/* Back to Regular View */}
+          <div>
+            <button
+              onClick={exitRoleView}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium w-full text-gray-600 hover:bg-gray-100 transition-all duration-200"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              Back to User View
+            </button>
+          </div>
+
+          {/* Cashier Section - Available to Cashier, Manager, Superuser */}
+          {isCashier && (
+            <div>
+              <p className="px-4 text-xs font-semibold text-green-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                Cashier
+              </p>
+              <nav className="space-y-1">
+                <NavLink to="/cashier/transactions" className={navLinkClass}>
+                  <CreditCard className="h-5 w-5" />
+                  Create Transaction
+                </NavLink>
+                <NavLink to="/cashier/redemptions" className={navLinkClass}>
+                  <ClipboardList className="h-5 w-5" />
+                  Process Redemption
+                </NavLink>
+              </nav>
+            </div>
+          )}
+
+          {/* Manager Section - Available to Manager, Superuser */}
+          {isManager && (
+            <div>
+              <p className="px-4 text-xs font-semibold text-blue-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                Manager
+              </p>
+              <nav className="space-y-1">
+                <NavLink to="/manager/users" className={navLinkClass}>
+                  <Users className="h-5 w-5" />
+                  Manage Users
+                </NavLink>
+                <NavLink to="/manager/transactions" className={navLinkClass}>
+                  <Receipt className="h-5 w-5" />
+                  All Transactions
+                </NavLink>
+                <NavLink to="/manager/promotions" className={navLinkClass}>
+                  <Megaphone className="h-5 w-5" />
+                  Manage Promotions
+                </NavLink>
+                <NavLink to="/manager/events" className={navLinkClass}>
+                  <Calendar className="h-5 w-5" />
+                  Manage Events
+                </NavLink>
+              </nav>
+            </div>
+          )}
+
+          {/* Superuser/Admin Section - Available only to Superuser */}
+          {isSuperuser && (
+            <div>
+              <p className="px-4 text-xs font-semibold text-purple-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-purple-500"></span>
+                Admin
+              </p>
+              <nav className="space-y-1">
+                <NavLink to="/admin/users" className={navLinkClass}>
+                  <ShieldCheck className="h-5 w-5" />
+                  User Roles
+                </NavLink>
+              </nav>
+            </div>
+          )}
+        </div>
+      </aside>
+    )
+  }
+
+  // Regular User View Sidebar
   return (
     <aside className="fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto">
       <div className="p-4 space-y-6">
@@ -81,25 +168,6 @@ const Sidebar = () => {
           </nav>
         </div>
 
-        {/* Cashier Section */}
-        {isCashier && (
-          <div>
-            <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Cashier
-            </p>
-            <nav className="space-y-1">
-              <NavLink to="/cashier/transactions" className={navLinkClass}>
-                <CreditCard className="h-5 w-5" />
-                Create Transaction
-              </NavLink>
-              <NavLink to="/cashier/redemptions" className={navLinkClass}>
-                <ClipboardList className="h-5 w-5" />
-                Process Redemption
-              </NavLink>
-            </nav>
-          </div>
-        )}
-
         {/* Event Organizer Section */}
         {isEventOrganizer && (
           <div>
@@ -114,52 +182,9 @@ const Sidebar = () => {
             </nav>
           </div>
         )}
-
-        {/* Manager Section */}
-        {isManager && (
-          <div>
-            <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Manager
-            </p>
-            <nav className="space-y-1">
-              <NavLink to="/manager/users" className={navLinkClass}>
-                <Users className="h-5 w-5" />
-                Manage Users
-              </NavLink>
-              <NavLink to="/manager/transactions" className={navLinkClass}>
-                <Receipt className="h-5 w-5" />
-                All Transactions
-              </NavLink>
-              <NavLink to="/manager/promotions" className={navLinkClass}>
-                <Megaphone className="h-5 w-5" />
-                Manage Promotions
-              </NavLink>
-              <NavLink to="/manager/events" className={navLinkClass}>
-                <Calendar className="h-5 w-5" />
-                Manage Events
-              </NavLink>
-            </nav>
-          </div>
-        )}
-
-        {/* Superuser Section */}
-        {isSuperuser && (
-          <div>
-            <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Superuser
-            </p>
-            <nav className="space-y-1">
-              <NavLink to="/admin/users" className={navLinkClass}>
-                <ShieldCheck className="h-5 w-5" />
-                User Roles
-              </NavLink>
-            </nav>
-          </div>
-        )}
       </div>
     </aside>
   )
 }
 
 export default Sidebar
-
