@@ -1,5 +1,6 @@
 export { default as UsersManagementPage } from './UsersManagementPage'
 export { default as UserDetailPage } from './UserDetailPage'
+export { default as CreateUserPage } from './CreateUserPage'
 export { default as AllTransactionsPage } from './AllTransactionsPage'
 export { default as PromotionsManagementPage } from './PromotionsManagementPage'
 export { default as CreatePromotionPage } from './CreatePromotionPage'
