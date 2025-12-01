@@ -85,6 +85,21 @@ export const eventAPI = {
     });
   },
 
+  /**
+   * Get events where current user is an organizer
+   * @param {Object} params - { page, limit }
+   */
+  getMyOrganizedEvents: async (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        query.append(key, value);
+      }
+    });
+    const queryString = query.toString();
+    return apiFetch(`/events/organized${queryString ? `?${queryString}` : ''}`);
+  },
+
   // ============================================================
   // RSVP OPERATIONS (Current User)
   // ============================================================

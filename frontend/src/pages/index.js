@@ -40,7 +40,7 @@ export {
 } from './manager'
 
 // Event Organizer
-export { MyEventsPage, AwardPointsPage } from './organizer'
+export { MyEventsPage, AwardPointsPage, OrganizerEditEventPage, ManageGuestsPage } from './organizer'
 
 // Admin/Superuser
 export { UserRolesPage } from './admin'

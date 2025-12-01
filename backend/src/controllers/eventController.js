@@ -444,10 +444,35 @@ async function awardPointsHandler(req, res) {
   }
 }
 
+/**
+ * GET /events/organized
+ * Get events where current user is an organizer
+ */
+async function getMyOrganizedEventsHandler(req, res) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    if (page < 1) {
+      return res.status(400).json({ error: 'Page must be a positive integer' });
+    }
+
+    const limit = parseInt(req.query.limit) || 10;
+    if (limit < 1) {
+      return res.status(400).json({ error: 'Limit must be a positive integer' });
+    }
+
+    const result = await eventService.getMyOrganizedEvents(req.user.id, page, limit);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Error getting organized events:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   createEventHandler,
   listEventsHandler,
   getEventHandler,
+  getMyOrganizedEventsHandler,
   updateEventHandler,
   deleteEventHandler,
   addOrganizerHandler,
