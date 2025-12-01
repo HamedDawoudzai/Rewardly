@@ -36,7 +36,7 @@ const Pagination = ({
     <div className="flex items-center justify-between px-2 py-4">
       {/* Item count */}
       {showItemCount && totalItems > 0 && (
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
           Showing <span className="font-medium">{startItem}</span> to{' '}
           <span className="font-medium">{endItem}</span> of{' '}
           <span className="font-medium">{totalItems}</span> results

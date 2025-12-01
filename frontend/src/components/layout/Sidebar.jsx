@@ -31,19 +31,19 @@ const Sidebar = () => {
     `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
       isActive
         ? 'bg-rewardly-blue text-white shadow-md'
-        : 'text-gray-600 hover:bg-rewardly-light-blue hover:text-rewardly-blue'
+        : 'text-gray-600 dark:text-gray-300 hover:bg-rewardly-light-blue dark:hover:bg-gray-700 hover:text-rewardly-blue dark:hover:text-white'
     }`
 
   // Role View Sidebar - Shows only role-specific actions
   if (isRoleView) {
     return (
-      <aside className="fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto">
+      <aside className="fixed left-0 top-16 bottom-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
         <div className="p-4 space-y-6">
           {/* Back to Regular View */}
           <div>
             <button
               onClick={exitRoleView}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium w-full text-gray-600 hover:bg-gray-100 transition-all duration-200"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium w-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
             >
               <ArrowLeft className="h-5 w-5" />
               Back to User View
@@ -124,11 +124,11 @@ const Sidebar = () => {
 
   // Regular User View Sidebar
   return (
-    <aside className="fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto">
+    <aside className="fixed left-0 top-16 bottom-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
       <div className="p-4 space-y-6">
         {/* Main Navigation */}
         <div>
-          <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
             Main
           </p>
           <nav className="space-y-1">
@@ -153,7 +153,7 @@ const Sidebar = () => {
 
         {/* User Actions */}
         <div>
-          <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
             Actions
           </p>
           <nav className="space-y-1">
@@ -174,7 +174,7 @@ const Sidebar = () => {
 
         {/* Organize Section - Available to all users (any user can be an event organizer) */}
         <div>
-          <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
             Organize
           </p>
           <nav className="space-y-1">

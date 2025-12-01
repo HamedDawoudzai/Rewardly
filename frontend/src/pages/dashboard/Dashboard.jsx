@@ -139,11 +139,11 @@ const Dashboard = () => {
 
   const getTransactionColor = (type) => {
     const colors = {
-      purchase: 'bg-green-100 text-green-700',
-      transfer: 'bg-blue-100 text-blue-700',
-      redemption: 'bg-orange-100 text-orange-700',
-      event: 'bg-purple-100 text-purple-700',
-      adjustment: 'bg-gray-100 text-gray-700',
+      purchase: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+      transfer: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+      redemption: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+      event: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+      adjustment: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
     }
     return colors[type] || colors.adjustment
   }
@@ -212,11 +212,11 @@ const Dashboard = () => {
         <Link to="/my-qr">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
             <CardContent className="p-6 text-center">
-              <div className="h-12 w-12 rounded-full bg-rewardly-light-blue flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <QrCode className="h-6 w-6 text-rewardly-blue" />
+              <div className="h-12 w-12 rounded-full bg-rewardly-light-blue dark:bg-rewardly-blue/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                <QrCode className="h-6 w-6 text-rewardly-blue dark:text-rewardly-light-blue" />
               </div>
-              <p className="font-medium text-gray-900">My QR Code</p>
-              <p className="text-sm text-gray-500">For transactions</p>
+              <p className="font-medium text-gray-900 dark:text-white">My QR Code</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">For transactions</p>
             </CardContent>
           </Card>
         </Link>
@@ -224,11 +224,11 @@ const Dashboard = () => {
         <Link to="/transfer">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
             <CardContent className="p-6 text-center">
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <Send className="h-6 w-6 text-blue-600" />
+              <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                <Send className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <p className="font-medium text-gray-900">Transfer Points</p>
-              <p className="text-sm text-gray-500">Send to others</p>
+              <p className="font-medium text-gray-900 dark:text-white">Transfer Points</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Send to others</p>
             </CardContent>
           </Card>
         </Link>
@@ -236,11 +236,11 @@ const Dashboard = () => {
         <Link to="/redeem">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
             <CardContent className="p-6 text-center">
-              <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <Gift className="h-6 w-6 text-orange-600" />
+              <div className="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                <Gift className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
-              <p className="font-medium text-gray-900">Redeem Points</p>
-              <p className="text-sm text-gray-500">Get rewards</p>
+              <p className="font-medium text-gray-900 dark:text-white">Redeem Points</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Get rewards</p>
             </CardContent>
           </Card>
         </Link>
@@ -248,11 +248,11 @@ const Dashboard = () => {
         <Link to="/events">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
             <CardContent className="p-6 text-center">
-              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <Calendar className="h-6 w-6 text-purple-600" />
+              <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                <Calendar className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <p className="font-medium text-gray-900">Browse Events</p>
-              <p className="text-sm text-gray-500">Earn points</p>
+              <p className="font-medium text-gray-900 dark:text-white">Browse Events</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Earn points</p>
             </CardContent>
           </Card>
         </Link>
@@ -272,21 +272,21 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             {recentTransactions.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No transactions yet</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4">No transactions yet</p>
             ) : (
               <div className="space-y-4">
                 {recentTransactions.map((tx) => (
-                  <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                  <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                     <div className="flex items-center gap-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getTransactionColor(tx.type)}`}>
                         {tx.type}
                       </span>
                       <div>
-                        <p className="font-medium text-gray-900">{tx.description}</p>
-                        <p className="text-sm text-gray-500">{tx.date}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{tx.description}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{tx.date}</p>
                       </div>
                     </div>
-                    <span className={`font-semibold ${tx.amount > 0 ? 'text-green-600' : tx.amount < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                    <span className={`font-semibold ${tx.amount > 0 ? 'text-green-600 dark:text-green-400' : tx.amount < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
                       {tx.amount > 0 ? '+' : ''}{tx.amount} pts
                     </span>
                   </div>
@@ -308,22 +308,22 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             {upcomingEvents.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No upcoming events. Browse events to RSVP!</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4">No upcoming events. Browse events to RSVP!</p>
             ) : (
               <div className="space-y-4">
                 {upcomingEvents.map((event) => (
                   <Link key={event.id} to={`/events/${event.id}`}>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                          <Calendar className="h-5 w-5 text-purple-600" />
+                        <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                          <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{event.name}</p>
-                          <p className="text-sm text-gray-500">{formatEventDate(event.startTime)}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{event.name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{formatEventDate(event.startTime)}</p>
                         </div>
                       </div>
-                      <span className="text-sm font-medium text-rewardly-blue">
+                      <span className="text-sm font-medium text-rewardly-blue dark:text-rewardly-light-blue">
                         +{event.points || event.pointsRemain || 0} pts
                       </span>
                     </div>

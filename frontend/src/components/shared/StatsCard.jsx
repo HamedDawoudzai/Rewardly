@@ -11,15 +11,15 @@ const StatsCard = ({
   variant = 'default' 
 }) => {
   const variants = {
-    default: 'bg-white',
+    default: 'bg-white dark:bg-gray-800',
     primary: 'bg-gradient-to-br from-rewardly-blue to-rewardly-dark-navy text-white',
     success: 'bg-gradient-to-br from-green-500 to-green-600 text-white',
     warning: 'bg-gradient-to-br from-orange-400 to-orange-500 text-white',
   }
 
   const isPositiveTrend = trend === 'up'
-  const textColor = variant === 'default' ? 'text-gray-600' : 'text-white/80'
-  const valueColor = variant === 'default' ? 'text-rewardly-dark-navy' : 'text-white'
+  const textColor = variant === 'default' ? 'text-gray-600 dark:text-gray-400' : 'text-white/80'
+  const valueColor = variant === 'default' ? 'text-rewardly-dark-navy dark:text-white' : 'text-white'
 
   return (
     <Card className={`${variants[variant]} border-0 shadow-lg`}>
@@ -55,12 +55,12 @@ const StatsCard = ({
           {Icon && (
             <div className={`p-3 rounded-xl ${
               variant === 'default' 
-                ? 'bg-rewardly-light-blue' 
+                ? 'bg-rewardly-light-blue dark:bg-rewardly-blue/20' 
                 : 'bg-white/20'
             }`}>
               <Icon className={`h-6 w-6 ${
                 variant === 'default' 
-                  ? 'text-rewardly-blue' 
+                  ? 'text-rewardly-blue dark:text-rewardly-light-blue' 
                   : 'text-white'
               }`} />
             </div>
