@@ -4,16 +4,9 @@ import { DataTable } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
 import { Eye, Plus, Edit2, Trash2, Users, CheckCircle, XCircle } from 'lucide-react'
+import { eventAPI } from '@/api/events'
 
-// ============================================================
-// TODO: Replace mock data imports with API calls
-// ============================================================
-import { 
-  mockEvents, 
-  getMockPaginatedData,
-  simulateApiDelay,
-  PAGINATION_DEFAULTS 
-} from '@/mock'
+const ITEMS_PER_PAGE = 10
 
 const EventsManagementPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
@@ -23,39 +16,53 @@ const EventsManagementPage = () => {
   const [totalItems, setTotalItems] = useState(0)
   const [filters, setFilters] = useState({
     published: '',
-    dateRange: '',
-    capacity: ''
+    started: '',
+    ended: ''
   })
 
   useEffect(() => {
     loadEvents()
   }, [currentPage, filters])
 
-  // ============================================================
-  // TODO: Replace with actual API call
-  // Example:
-  //   const response = await eventAPI.getAll({
-  //     page: currentPage,
-  //     limit: PAGINATION_DEFAULTS.itemsPerPage,
-  //     published: filters.published,
-  //     ...filters
-  //   })
-  // ============================================================
   const loadEvents = async () => {
     setLoading(true)
     try {
-      await simulateApiDelay(300) // Remove this when using real API
+      const params = {
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+      }
       
-      // TODO: Replace with actual API call
-      const { data, pagination } = getMockPaginatedData(
-        mockEvents, 
-        currentPage, 
-        PAGINATION_DEFAULTS.itemsPerPage
-      )
+      // Add filters
+      if (filters.published !== '') {
+        params.published = filters.published
+      }
+      if (filters.started === 'upcoming') {
+        params.started = 'false'
+      } else if (filters.started === 'past') {
+        params.ended = 'true'
+      }
       
-      setEvents(data)
-      setTotalPages(pagination.totalPages)
-      setTotalItems(pagination.totalItems)
+      const response = await eventAPI.getAll(params)
+      
+      // Transform data to match expected format
+      // For managers, backend returns guests array; for regular users, numGuests
+      const transformedData = (response.results || []).map(event => ({
+        id: event.id,
+        name: event.name,
+        description: event.description,
+        location: event.location,
+        startTime: event.startsAt || event.startTime,
+        endTime: event.endsAt || event.endTime,
+        capacity: event.capacity,
+        numGuests: event.guests?.length ?? event.numGuests ?? event.guestCount ?? 0,
+        pointsRemain: event.pointsRemain || event.pointsPool || 0,
+        pointsAwarded: event.pointsAwarded || 0,
+        published: event.published
+      }))
+      
+      setEvents(transformedData)
+      setTotalPages(Math.ceil((response.count || 0) / ITEMS_PER_PAGE))
+      setTotalItems(response.count || 0)
     } catch (error) {
       console.error('Failed to load events:', error)
     } finally {
@@ -63,16 +70,16 @@ const EventsManagementPage = () => {
     }
   }
 
-  // ============================================================
-  // TODO: Implement delete event API call
-  // Example:
-  //   await eventAPI.delete(eventId)
-  //   loadEvents() // Reload after delete
-  // ============================================================
   const handleDelete = async (eventId) => {
     if (!confirm('Are you sure you want to delete this event?')) return
-    console.log('TODO: Delete event:', eventId)
-    // TODO: Call API and reload
+    
+    try {
+      await eventAPI.delete(eventId)
+      await loadEvents()
+    } catch (error) {
+      console.error('Failed to delete event:', error)
+      alert(error.message || 'Failed to delete event')
+    }
   }
 
   const columns = [
@@ -170,8 +177,8 @@ const EventsManagementPage = () => {
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
         <select 
-          value={filters.dateRange}
-          onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+          value={filters.started}
+          onChange={(e) => setFilters({ ...filters, started: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         >
           <option value="">All Time</option>
@@ -179,25 +186,13 @@ const EventsManagementPage = () => {
           <option value="past">Past</option>
         </select>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
-        <select 
-          value={filters.capacity}
-          onChange={(e) => setFilters({ ...filters, capacity: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-        >
-          <option value="">Any</option>
-          <option value="available">Has Availability</option>
-          <option value="full">Full</option>
-        </select>
-      </div>
-      <div className="flex items-end">
+      <div className="md:col-span-2 flex items-end">
         <Button 
           variant="outline" 
           className="w-full"
-          onClick={() => setFilters({ published: '', dateRange: '', capacity: '' })}
+          onClick={() => setFilters({ published: '', started: '', ended: '' })}
         >
-          Clear
+          Clear Filters
         </Button>
       </div>
     </div>
@@ -233,7 +228,7 @@ const EventsManagementPage = () => {
         currentPage={currentPage}
         totalPages={totalPages}
         totalItems={totalItems}
-        itemsPerPage={PAGINATION_DEFAULTS.itemsPerPage}
+        itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={setCurrentPage}
         filters={filterPanel}
         emptyMessage="No events found"

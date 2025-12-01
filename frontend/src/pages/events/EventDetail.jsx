@@ -1,35 +1,103 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Calendar, MapPin, Users, Clock, Coins, User, CheckCircle } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowLeft, Calendar, MapPin, Users, Clock, Coins, User, CheckCircle, AlertCircle, Shield } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { eventAPI } from '@/api/events'
+import { useAuth } from '@/context/AuthContext'
 
 const EventDetail = () => {
   const { id } = useParams()
+  const location = useLocation()
+  const { user } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const [event, setEvent] = useState(null)
+  const [error, setError] = useState(null)
+  const [rsvpLoading, setRsvpLoading] = useState(false)
   const [isRsvped, setIsRsvped] = useState(false)
+  const [isOrganizer, setIsOrganizer] = useState(false)
 
-  // Mock data - will be replaced with real API call
-  const event = {
-    id: parseInt(id),
-    name: 'Tech Workshop: React Basics',
-    description: 'Learn the fundamentals of React.js in this hands-on workshop. We will cover components, state management, hooks, and best practices. This workshop is suitable for beginners with basic JavaScript knowledge. Laptops are required for the hands-on exercises.',
-    location: 'Room BA1234, Bahen Centre',
-    startTime: '2025-12-01T14:00:00Z',
-    endTime: '2025-12-01T17:00:00Z',
-    capacity: 50,
-    numGuests: 35,
-    pointsRemain: 5000,
-    pointsAwarded: 100,
-    published: true,
-    organizers: [
-      { id: 1, name: 'Jane Smith', utorid: 'smithj1' },
-      { id: 2, name: 'John Doe', utorid: 'doej2' }
-    ]
+  // Detect route context for proper navigation
+  const isManagerRoute = location.pathname.startsWith('/manager/')
+  const isOrganizerRoute = location.pathname.startsWith('/organizer/')
+  
+  const backLink = isManagerRoute ? '/manager/events' : isOrganizerRoute ? '/organizer/events' : '/events'
+  const backLabel = isManagerRoute ? 'Manage Events' : isOrganizerRoute ? 'My Events' : 'Events'
+
+  useEffect(() => {
+    loadEvent()
+  }, [id])
+
+  const loadEvent = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await eventAPI.getById(id)
+      setEvent(response)
+      setIsRsvped(response.isRsvped || response.userRsvp || false)
+      
+      // Check if current user is an organizer of this event
+      const organizers = response.organizers || []
+      const userIsOrganizer = organizers.some(org => org.utorid === user?.utorid)
+      setIsOrganizer(userIsOrganizer)
+    } catch (err) {
+      console.error('Failed to load event:', err)
+      setError(err.message || 'Failed to load event')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const isUpcoming = new Date(event.startTime) > new Date()
-  const isFull = event.capacity && event.numGuests >= event.capacity
+  const handleRsvp = async () => {
+    setRsvpLoading(true)
+    try {
+      if (isRsvped) {
+        await eventAPI.cancelRsvp(id)
+        setIsRsvped(false)
+      } else {
+        await eventAPI.rsvp(id)
+        setIsRsvped(true)
+      }
+      // Reload event to get updated guest count
+      await loadEvent()
+    } catch (err) {
+      console.error('Failed to update RSVP:', err)
+      alert(err.message || 'Failed to update RSVP')
+    } finally {
+      setRsvpLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-rewardly-blue border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (error || !event) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+        <p className="text-gray-500 mb-4">{error || 'Event not found'}</p>
+        <Link to={backLink}>
+          <Button variant="outline">Back to {backLabel}</Button>
+        </Link>
+      </div>
+    )
+  }
+
+  const startTime = event.startsAt || event.startTime
+  const endTime = event.endsAt || event.endTime
+  const numGuests = event.numGuests || event.guestCount || 0
+  const pointsAwarded = event.pointsAwarded || event.pointsPool || 0
+  const pointsRemain = event.pointsRemain || event.pointsPool || 0
+  const organizers = event.organizers || []
+
+  const isUpcoming = new Date(startTime) > new Date()
+  const isFull = event.capacity && numGuests >= event.capacity
 
   const formatDateTime = (dateString) => {
     const date = new Date(dateString)
@@ -44,26 +112,31 @@ const EventDetail = () => {
     })
   }
 
-  const handleRsvp = () => {
-    setIsRsvped(!isRsvped)
-    // TODO: API call to RSVP
-  }
+  // Build breadcrumbs based on context
+  const breadcrumbs = isManagerRoute
+    ? [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Manager' },
+        { label: 'Events', href: '/manager/events' },
+        { label: event.name }
+      ]
+    : [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Events', href: '/events' },
+        { label: event.name }
+      ]
 
   return (
     <div>
       <PageHeader 
         title={event.name}
         subtitle="Event details"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Events', href: '/events' },
-          { label: event.name }
-        ]}
+        breadcrumbs={breadcrumbs}
         actions={
-          <Link to="/events">
+          <Link to={backLink}>
             <Button variant="outline" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Back to Events
+              Back to {backLabel}
             </Button>
           </Link>
         }
@@ -87,7 +160,7 @@ const EventDetail = () => {
           <CardContent className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-              <p className="text-gray-600 whitespace-pre-line">{event.description}</p>
+              <p className="text-gray-600 whitespace-pre-line">{event.description || 'No description provided'}</p>
             </div>
 
             <hr />
@@ -98,7 +171,7 @@ const EventDetail = () => {
                   <Calendar className="h-4 w-4" />
                   Start Time
                 </label>
-                <p className="text-gray-900">{formatDateTime(event.startTime)}</p>
+                <p className="text-gray-900">{formatDateTime(startTime)}</p>
               </div>
               
               <div className="space-y-1">
@@ -106,7 +179,7 @@ const EventDetail = () => {
                   <Clock className="h-4 w-4" />
                   End Time
                 </label>
-                <p className="text-gray-900">{formatDateTime(event.endTime)}</p>
+                <p className="text-gray-900">{formatDateTime(endTime)}</p>
               </div>
               
               <div className="space-y-1">
@@ -123,7 +196,7 @@ const EventDetail = () => {
                   Attendance
                 </label>
                 <p className="text-gray-900">
-                  {event.numGuests} attending
+                  {numGuests} attending
                   {event.capacity && ` / ${event.capacity} capacity`}
                 </p>
                 {isFull && (
@@ -134,22 +207,24 @@ const EventDetail = () => {
 
             <hr />
 
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Organizers</h3>
-              <div className="flex flex-wrap gap-3">
-                {event.organizers.map((org) => (
-                  <div key={org.id} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
-                    <div className="h-8 w-8 rounded-full bg-rewardly-light-blue flex items-center justify-center">
-                      <User className="h-4 w-4 text-rewardly-blue" />
+            {organizers.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Organizers</h3>
+                <div className="flex flex-wrap gap-3">
+                  {organizers.map((org) => (
+                    <div key={org.id || org.utorid} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
+                      <div className="h-8 w-8 rounded-full bg-rewardly-light-blue flex items-center justify-center">
+                        <User className="h-4 w-4 text-rewardly-blue" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{org.name || org.utorid}</p>
+                        <p className="text-xs text-gray-500">@{org.utorid || org.username}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{org.name}</p>
-                      <p className="text-xs text-gray-500">@{org.utorid}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -164,9 +239,18 @@ const EventDetail = () => {
                 <div className="h-16 w-16 rounded-full bg-rewardly-light-blue flex items-center justify-center mx-auto mb-4">
                   <Coins className="h-8 w-8 text-rewardly-blue" />
                 </div>
-                <p className="text-4xl font-bold text-rewardly-blue">+{event.pointsAwarded}</p>
+                <p className="text-4xl font-bold text-rewardly-blue">+{pointsAwarded}</p>
                 <p className="text-gray-500 mt-1">Points for attending</p>
               </div>
+              
+              {isManagerRoute && (
+                <div className="border-t pt-4 mt-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Points Remaining</span>
+                    <span className="font-medium">{pointsRemain.toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
               
               <div className="border-t pt-4 mt-4 text-sm text-gray-500 text-center">
                 <p>Points will be awarded after the event</p>
@@ -174,10 +258,25 @@ const EventDetail = () => {
             </CardContent>
           </Card>
 
-          {isUpcoming && (
+          {isUpcoming && !isManagerRoute && (
             <Card>
               <CardContent className="pt-6">
-                {isRsvped ? (
+                {isOrganizer ? (
+                  <div className="text-center">
+                    <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
+                      <Shield className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <p className="font-semibold text-blue-700 mb-2">You're an Organizer</p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Organizers manage this event and cannot RSVP as guests.
+                    </p>
+                    <Link to={`/organizer/events/${id}/edit`}>
+                      <Button className="w-full">
+                        Manage Event
+                      </Button>
+                    </Link>
+                  </div>
+                ) : isRsvped ? (
                   <div className="text-center">
                     <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
                       <CheckCircle className="h-6 w-6 text-green-600" />
@@ -190,8 +289,9 @@ const EventDetail = () => {
                       variant="outline" 
                       className="w-full"
                       onClick={handleRsvp}
+                      disabled={rsvpLoading}
                     >
-                      Cancel RSVP
+                      {rsvpLoading ? 'Cancelling...' : 'Cancel RSVP'}
                     </Button>
                   </div>
                 ) : (
@@ -204,12 +304,25 @@ const EventDetail = () => {
                     <Button 
                       className="w-full"
                       onClick={handleRsvp}
-                      disabled={isFull}
+                      disabled={rsvpLoading || isFull}
                     >
-                      {isFull ? 'Join Waitlist' : 'RSVP Now'}
+                      {rsvpLoading ? 'Processing...' : isFull ? 'Join Waitlist' : 'RSVP Now'}
                     </Button>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {isManagerRoute && (
+            <Card>
+              <CardContent className="pt-6 space-y-2">
+                <Link to={`/manager/events/${id}/edit`} className="block">
+                  <Button variant="outline" className="w-full">Edit Event</Button>
+                </Link>
+                <Link to={`/manager/events/${id}/attendees`} className="block">
+                  <Button variant="outline" className="w-full">Manage Attendees</Button>
+                </Link>
               </CardContent>
             </Card>
           )}
@@ -220,4 +333,3 @@ const EventDetail = () => {
 }
 
 export default EventDetail
-

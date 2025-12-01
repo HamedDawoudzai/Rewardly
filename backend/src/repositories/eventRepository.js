@@ -535,10 +535,60 @@ async function getEventPointsInfo(eventId) {
   };
 }
 
+/**
+ * Find events where user is an organizer
+ */
+async function findEventsByOrganizer(userId, page = 1, limit = 10) {
+  const skip = (page - 1) * limit;
+
+  const [events, total] = await Promise.all([
+    prisma.event.findMany({
+      where: {
+        organizers: {
+          some: {
+            userId: userId
+          }
+        }
+      },
+      skip,
+      take: limit,
+      include: {
+        organizers: {
+          include: {
+            user: true
+          }
+        },
+        rsvps: {
+          where: { status: 'yes' },
+          include: {
+            user: true
+          }
+        },
+        awards: true
+      },
+      orderBy: {
+        startsAt: 'asc'
+      }
+    }),
+    prisma.event.count({
+      where: {
+        organizers: {
+          some: {
+            userId: userId
+          }
+        }
+      }
+    })
+  ]);
+
+  return { events, total };
+}
+
 module.exports = {
   createEvent,
   findEventsWithFilters,
   findEventById,
+  findEventsByOrganizer,
   updateEvent,
   deleteEvent,
   addOrganizer,

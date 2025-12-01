@@ -155,7 +155,8 @@ async function listEventsHandler(req, res) {
     }
     const finalLimit = limit || 10;
 
-    const result = await eventService.getEvents(filters, page, finalLimit, isManager);
+    // Pass current user ID to check RSVP status
+    const result = await eventService.getEvents(filters, page, finalLimit, isManager, req.user.id);
     return res.status(200).json(result);
   } catch (error) {
     if (error.message.includes('Cannot filter')) {
@@ -443,10 +444,40 @@ async function awardPointsHandler(req, res) {
   }
 }
 
+/**
+ * GET /events/organized
+ * Get events where current user is an organizer
+ * Managers+ see all events (they're effectively organizers for all)
+ */
+async function getMyOrganizedEventsHandler(req, res) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    if (page < 1) {
+      return res.status(400).json({ error: 'Page must be a positive integer' });
+    }
+
+    const limit = parseInt(req.query.limit) || 10;
+    if (limit < 1) {
+      return res.status(400).json({ error: 'Limit must be a positive integer' });
+    }
+
+    // Check if user is manager+ (they can organize all events)
+    const userRole = userService.getUserRole(req.user);
+    const isManager = userRole === 'manager' || userRole === 'superuser';
+
+    const result = await eventService.getMyOrganizedEvents(req.user.id, page, limit, isManager);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Error getting organized events:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   createEventHandler,
   listEventsHandler,
   getEventHandler,
+  getMyOrganizedEventsHandler,
   updateEventHandler,
   deleteEventHandler,
   addOrganizerHandler,
