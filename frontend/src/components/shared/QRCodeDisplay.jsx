@@ -1,7 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { QrCode, Copy, Check } from 'lucide-react'
+import { Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { QRCodeSVG } from 'qrcode.react'
 
 const QRCodeDisplay = ({ value, title, subtitle, size = 200 }) => {
   const [copied, setCopied] = useState(false)
@@ -25,26 +26,29 @@ const QRCodeDisplay = ({ value, title, subtitle, size = 200 }) => {
             <p className="text-sm text-gray-500 mb-4">{subtitle}</p>
           )}
           
-          {/* QR Code Placeholder - In production, use a QR library like qrcode.react */}
+          {/* QR Code */}
           <div 
             className="mx-auto bg-white border-2 border-gray-200 rounded-xl p-4 flex items-center justify-center"
             style={{ width: size + 32, height: size + 32 }}
           >
-            <div 
-              className="bg-gradient-to-br from-rewardly-light-blue to-white rounded-lg flex items-center justify-center border border-gray-100"
-              style={{ width: size, height: size }}
-            >
-              {/* Placeholder QR pattern */}
-              <div className="text-center">
-                <QrCode className="h-24 w-24 text-rewardly-blue mx-auto mb-2" />
-                <p className="text-xs text-gray-500 font-mono break-all px-4">
-                  {value?.substring(0, 20)}...
-                </p>
-              </div>
-            </div>
+            <QRCodeSVG
+              value={value || 'INVALID'}
+              size={size}
+              bgColor="#ffffff"
+              fgColor="#1e3a5f"
+              level="M"
+              includeMargin={false}
+            />
           </div>
 
-          {/* Copy ID Button */}
+          {/* Value Display */}
+          <div className="mt-3 px-4">
+            <p className="text-sm text-gray-600 font-mono bg-gray-50 py-2 px-3 rounded-lg break-all">
+              {value}
+            </p>
+          </div>
+
+          {/* Copy Button */}
           <div className="mt-4">
             <Button
               variant="outline"
@@ -60,7 +64,7 @@ const QRCodeDisplay = ({ value, title, subtitle, size = 200 }) => {
               ) : (
                 <>
                   <Copy className="h-4 w-4" />
-                  Copy ID
+                  Copy Value
                 </>
               )}
             </Button>
@@ -72,4 +76,3 @@ const QRCodeDisplay = ({ value, title, subtitle, size = 200 }) => {
 }
 
 export default QRCodeDisplay
-

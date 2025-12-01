@@ -53,9 +53,13 @@ const TransactionsPage = () => {
       const normalizedTx = txList.map(tx => {
         let amount = tx.amount || 0
         if (tx.type === 'transfer') {
+          // Transfers sent by user are negative
           amount = -(tx.sent || 0)
-        } else if (tx.type === 'redemption' && tx.redeemed) {
-          amount = -(tx.redeemed || tx.amount || 0)
+        } else if (tx.type === 'redemption') {
+          // Redemptions are always negative (points being spent)
+          // Use redeemed if processed, otherwise use amount
+          const redemptionAmount = tx.redeemed || tx.amount || 0
+          amount = -Math.abs(redemptionAmount)
         }
         return { ...tx, amount }
       })
@@ -104,7 +108,7 @@ const TransactionsPage = () => {
       key: 'amount',
       label: 'Amount',
       render: (value) => (
-        <span className={`font-semibold ${value > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+        <span className={`font-semibold ${value > 0 ? 'text-green-600' : value < 0 ? 'text-red-600' : 'text-gray-600'}`}>
           {value > 0 ? '+' : ''}{value} pts
         </span>
       )
