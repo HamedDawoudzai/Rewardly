@@ -78,6 +78,11 @@ function App() {
                 <ProcessRedemptionPage />
               </ProtectedRoute>
             } />
+            <Route path="/cashier/users" element={
+              <ProtectedRoute requiredRole="cashier">
+                <CreateUserPage />
+              </ProtectedRoute>
+            } />
             
             {/* Event Organizer Routes - Available to all authenticated users */}
             <Route path="/organizer/events" element={<MyEventsPage />} />
@@ -90,11 +95,6 @@ function App() {
             <Route path="/manager/users" element={
               <ProtectedRoute requiredRole="manager">
                 <UsersManagementPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/manager/users/new" element={
-              <ProtectedRoute requiredRole="manager">
-                <CreateUserPage />
               </ProtectedRoute>
             } />
             <Route path="/manager/users/:id" element={

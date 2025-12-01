@@ -66,6 +66,10 @@ const Sidebar = () => {
                   <ClipboardList className="h-5 w-5" />
                   Process Redemption
                 </NavLink>
+                <NavLink to="/cashier/users" className={navLinkClass}>
+                  <UserPlus className="h-5 w-5" />
+                  Create User
+                </NavLink>
               </nav>
             </div>
           )}
@@ -81,10 +85,6 @@ const Sidebar = () => {
                 <NavLink to="/manager/users" className={navLinkClass}>
                   <Users className="h-5 w-5" />
                   Manage Users
-                </NavLink>
-                <NavLink to="/manager/users/new" className={navLinkClass}>
-                  <UserPlus className="h-5 w-5" />
-                  Create User
                 </NavLink>
                 <NavLink to="/manager/transactions" className={navLinkClass}>
                   <Receipt className="h-5 w-5" />

@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { usersAPI } from "@/api/users";
 import { getUser } from "@/utils/auth";
-import { UserPlus, ArrowLeft, CheckCircle, Copy, Check, Key, AlertCircle } from "lucide-react";
+import { UserPlus, CheckCircle, Copy, Check, Key, AlertCircle } from "lucide-react";
 
 const CreateUserPage = () => {
   const navigate = useNavigate();
@@ -20,6 +20,7 @@ const CreateUserPage = () => {
   };
 
   const currentRank = roleRank[currentRole] || 1;
+  const isManager = ["manager", "superuser"].includes(currentRole);
 
   // Available roles based on current user's permissions
   // Can only create users with roles LOWER than their own
@@ -159,8 +160,7 @@ const CreateUserPage = () => {
           subtitle="Share the activation link with the new user"
           breadcrumbs={[
             { label: "Dashboard", href: "/dashboard" },
-            { label: "Manager" },
-            { label: "Users", href: "/manager/users" },
+            { label: "Cashier" },
             { label: "Create User" },
           ]}
         />
@@ -285,9 +285,15 @@ const CreateUserPage = () => {
               <UserPlus className="h-4 w-4 mr-2" />
               Create Another
             </Button>
-            <Button onClick={() => navigate("/manager/users")}>
-              View All Users
-            </Button>
+            {isManager ? (
+              <Button onClick={() => navigate("/manager/users")}>
+                View All Users
+              </Button>
+            ) : (
+              <Button onClick={() => navigate("/dashboard")}>
+                Back to Dashboard
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -302,16 +308,9 @@ const CreateUserPage = () => {
         subtitle="Add a new user to the system"
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "Manager" },
-          { label: "Users", href: "/manager/users" },
+          { label: "Cashier" },
           { label: "Create User" },
         ]}
-        actions={
-          <Button variant="outline" onClick={() => navigate("/manager/users")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Users
-          </Button>
-        }
       />
 
       <div className="max-w-lg mx-auto">
@@ -401,7 +400,7 @@ const CreateUserPage = () => {
           <div className="mt-6 pt-6 border-t flex justify-end gap-3">
             <Button
               variant="outline"
-              onClick={() => navigate("/manager/users")}
+              onClick={() => navigate(isManager ? "/manager/users" : "/dashboard")}
               disabled={loading}
             >
               Cancel

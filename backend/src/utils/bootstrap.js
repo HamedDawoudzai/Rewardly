@@ -27,6 +27,7 @@ const PERMISSIONS = [
   
   // User Management & Viewing
   { name: 'CASHIER_VIEW_USER', description: 'View user details (limited)' },
+  { name: 'CASHIER_CREATE_USER', description: 'Cashier creates user accounts' },
   { name: 'MANAGER_VIEW_USERS', description: 'List and view all users' },
   { name: 'MANAGER_UPDATE_USER', description: 'Update user details and status' },
   
@@ -99,6 +100,7 @@ const ROLE_PERMISSIONS = {
   ],
   cashier: [
     'CASHIER_VIEW_USER',
+    'CASHIER_CREATE_USER',
     'CASHIER_CREATE_PURCHASE',
     'CASHIER_PROCESS_REDEMPTION',
     'CASHIER_APPLY_PROMO'

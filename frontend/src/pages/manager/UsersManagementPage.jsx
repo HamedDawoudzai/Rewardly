@@ -295,7 +295,7 @@ const UsersManagementPage = () => {
         actions={
           <Button
             className="gap-2"
-            onClick={() => navigate("/manager/users/new")}
+            onClick={() => navigate("/cashier/users")}
           >
             <UserPlus className="h-4 w-4" />
             Create User
