@@ -290,6 +290,7 @@ async function deleteEvent(eventId) {
 
 /**
  * Add organizer to event
+ * If user is already a guest, they are removed from guests and added as organizer
  */
 async function addOrganizer(eventId, utorid) {
   const event = await eventRepository.findEventById(eventId);
@@ -308,9 +309,15 @@ async function addOrganizer(eventId, utorid) {
     throw new Error('User not found');
   }
 
-  // Check if user is already a guest
+  // If user is already a guest, remove them from guests first
+  // Organizers cannot be guests - they manage the event
   if (await eventRepository.isGuest(eventId, user.id)) {
-    throw new Error('Cannot add guest as organizer.');
+    await eventRepository.removeGuest(eventId, user.id);
+  }
+
+  // Check if already an organizer
+  if (await eventRepository.isOrganizer(eventId, user.id)) {
+    throw new Error('User is already an organizer');
   }
 
   await eventRepository.addOrganizer(eventId, user.id);
@@ -598,9 +605,22 @@ function mapEventToResponse(event, includeAdminFields = false) {
 
 /**
  * Get events organized by user
+ * Managers+ see all events as they can organize any event
  */
-async function getMyOrganizedEvents(userId, page, limit) {
-  const { events, total } = await eventRepository.findEventsByOrganizer(userId, page, limit);
+async function getMyOrganizedEvents(userId, page, limit, isManager = false) {
+  let events, total;
+
+  if (isManager) {
+    // Managers can see and organize all events
+    const result = await eventRepository.findEventsWithFilters({}, page, limit, true);
+    events = result.events;
+    total = result.total;
+  } else {
+    // Regular users only see events they're assigned as organizer
+    const result = await eventRepository.findEventsByOrganizer(userId, page, limit);
+    events = result.events;
+    total = result.total;
+  }
 
   const results = events.map(event => {
     const mapped = mapEventToResponse(event, true); // Organizers get full details

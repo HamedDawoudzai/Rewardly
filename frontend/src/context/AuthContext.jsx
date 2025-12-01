@@ -1,8 +1,17 @@
-import { createContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useState, useEffect, useCallback, useContext } from 'react'
 import { authAPI, userAPI } from '@/api/api'
 import { saveAuth, getToken, getUser, clearAuth, isTokenExpired } from '@/utils/auth'
 
 export const AuthContext = createContext(null)
+
+// Custom hook for using auth context
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)

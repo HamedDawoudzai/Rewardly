@@ -45,6 +45,7 @@ const EventsManagementPage = () => {
       const response = await eventAPI.getAll(params)
       
       // Transform data to match expected format
+      // For managers, backend returns guests array; for regular users, numGuests
       const transformedData = (response.results || []).map(event => ({
         id: event.id,
         name: event.name,
@@ -53,7 +54,7 @@ const EventsManagementPage = () => {
         startTime: event.startsAt || event.startTime,
         endTime: event.endsAt || event.endTime,
         capacity: event.capacity,
-        numGuests: event.numGuests || event.guestCount || 0,
+        numGuests: event.guests?.length ?? event.numGuests ?? event.guestCount ?? 0,
         pointsRemain: event.pointsRemain || event.pointsPool || 0,
         pointsAwarded: event.pointsAwarded || 0,
         published: event.published

@@ -2,18 +2,21 @@ import { useParams, Link, useLocation } from 'react-router-dom'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Calendar, MapPin, Users, Clock, Coins, User, CheckCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Calendar, MapPin, Users, Clock, Coins, User, CheckCircle, AlertCircle, Shield } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { eventAPI } from '@/api/events'
+import { useAuth } from '@/context/AuthContext'
 
 const EventDetail = () => {
   const { id } = useParams()
   const location = useLocation()
+  const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [event, setEvent] = useState(null)
   const [error, setError] = useState(null)
   const [rsvpLoading, setRsvpLoading] = useState(false)
   const [isRsvped, setIsRsvped] = useState(false)
+  const [isOrganizer, setIsOrganizer] = useState(false)
 
   // Detect route context for proper navigation
   const isManagerRoute = location.pathname.startsWith('/manager/')
@@ -33,6 +36,11 @@ const EventDetail = () => {
       const response = await eventAPI.getById(id)
       setEvent(response)
       setIsRsvped(response.isRsvped || response.userRsvp || false)
+      
+      // Check if current user is an organizer of this event
+      const organizers = response.organizers || []
+      const userIsOrganizer = organizers.some(org => org.utorid === user?.utorid)
+      setIsOrganizer(userIsOrganizer)
     } catch (err) {
       console.error('Failed to load event:', err)
       setError(err.message || 'Failed to load event')
@@ -253,7 +261,22 @@ const EventDetail = () => {
           {isUpcoming && !isManagerRoute && (
             <Card>
               <CardContent className="pt-6">
-                {isRsvped ? (
+                {isOrganizer ? (
+                  <div className="text-center">
+                    <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
+                      <Shield className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <p className="font-semibold text-blue-700 mb-2">You're an Organizer</p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Organizers manage this event and cannot RSVP as guests.
+                    </p>
+                    <Link to={`/organizer/events/${id}/edit`}>
+                      <Button className="w-full">
+                        Manage Event
+                      </Button>
+                    </Link>
+                  </div>
+                ) : isRsvped ? (
                   <div className="text-center">
                     <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
                       <CheckCircle className="h-6 w-6 text-green-600" />

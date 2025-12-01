@@ -447,6 +447,7 @@ async function awardPointsHandler(req, res) {
 /**
  * GET /events/organized
  * Get events where current user is an organizer
+ * Managers+ see all events (they're effectively organizers for all)
  */
 async function getMyOrganizedEventsHandler(req, res) {
   try {
@@ -460,7 +461,11 @@ async function getMyOrganizedEventsHandler(req, res) {
       return res.status(400).json({ error: 'Limit must be a positive integer' });
     }
 
-    const result = await eventService.getMyOrganizedEvents(req.user.id, page, limit);
+    // Check if user is manager+ (they can organize all events)
+    const userRole = userService.getUserRole(req.user);
+    const isManager = userRole === 'manager' || userRole === 'superuser';
+
+    const result = await eventService.getMyOrganizedEvents(req.user.id, page, limit, isManager);
     return res.status(200).json(result);
   } catch (error) {
     console.error('Error getting organized events:', error);

@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Pagination, EmptyState } from '@/components/shared'
 import { Link } from 'react-router-dom'
-import { Calendar, MapPin, Users, Clock, ArrowRight, Coins, CheckCircle } from 'lucide-react'
+import { Calendar, MapPin, Users, Clock, ArrowRight, Coins, CheckCircle, Shield } from 'lucide-react'
 import { eventAPI } from '@/api/events'
+import { useAuth } from '@/context/AuthContext'
 
 const ITEMS_PER_PAGE = 4
 
 const EventsPage = () => {
+  const { user } = useAuth()
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [events, setEvents] = useState([])
@@ -127,6 +129,9 @@ const EventsPage = () => {
               const numGuests = event.numGuests || event.guestCount || 0
               const pointsAwarded = event.pointsAwarded || event.pointsPool || 0
               const isUserRsvped = event.isRsvped || event.userRsvp
+              // Check if current user is an organizer for this event
+              const organizers = event.organizers || []
+              const isUserOrganizer = organizers.some(org => org.utorid === user?.utorid)
               
               return (
                 <Card key={event.id} className="hover:shadow-lg transition-shadow overflow-hidden">
@@ -135,7 +140,12 @@ const EventsPage = () => {
                     <div className="flex items-start justify-between">
                       <CardTitle className="text-lg">{event.name}</CardTitle>
                       <div className="flex gap-2">
-                        {isUserRsvped && (
+                        {isUserOrganizer && (
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1">
+                            <Shield className="h-3 w-3" /> Organizer
+                          </span>
+                        )}
+                        {!isUserOrganizer && isUserRsvped && (
                           <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700 flex items-center gap-1">
                             <CheckCircle className="h-3 w-3" /> RSVP'd
                           </span>
@@ -190,7 +200,7 @@ const EventsPage = () => {
                         </Button>
                       </Link>
                       
-                      {isUpcoming(event) && (
+                      {isUpcoming(event) && !isUserOrganizer && (
                         isUserRsvped ? (
                           <Button 
                             variant="outline" 
@@ -209,6 +219,13 @@ const EventsPage = () => {
                             {rsvpLoading === event.id ? 'RSVP\'ing...' : 'RSVP'}
                           </Button>
                         )
+                      )}
+                      {isUpcoming(event) && isUserOrganizer && (
+                        <Link to={`/organizer/events/${event.id}/edit`}>
+                          <Button size="sm" variant="outline">
+                            Manage
+                          </Button>
+                        </Link>
                       )}
                     </div>
                   </CardContent>
