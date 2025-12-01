@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { DashboardLayout } from '@/components/layout'
 import { ProtectedRoute } from '@/components/auth'
 import { AuthProvider } from '@/context/AuthContext'
+import { DarkModeProvider } from '@/context/DarkModeContext'
 import LandingPage from '@/components/LandingPage'
 
 // Pages
@@ -38,9 +39,10 @@ import {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
+    <DarkModeProvider>
+      <AuthProvider>
+        <Router>
+          <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/reset-password/:resetToken" element={<ResetPasswordPage />} />
@@ -166,9 +168,10 @@ function App() {
           
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </DarkModeProvider>
   )
 }
 
