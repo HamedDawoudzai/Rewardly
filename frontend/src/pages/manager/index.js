@@ -6,4 +6,5 @@ export { default as PromotionsManagementPage } from './PromotionsManagementPage'
 export { default as CreatePromotionPage } from './CreatePromotionPage'
 export { default as EventsManagementPage } from './EventsManagementPage'
 export { default as CreateEventPage } from './CreateEventPage'
+export { default as AnalyticsPage } from './AnalyticsPage'
 
