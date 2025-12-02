@@ -30,6 +30,7 @@ import {
   CreatePromotionPage,
   EventsManagementPage,
   CreateEventPage,
+  AnalyticsPage,
   MyEventsPage,
   AwardPointsPage,
   OrganizerEditEventPage,
@@ -155,6 +156,11 @@ function App() {
             <Route path="/manager/events/:id/attendees" element={
               <ProtectedRoute requiredRole="manager">
                 <EventDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/manager/analytics" element={
+              <ProtectedRoute requiredRole="manager">
+                <AnalyticsPage />
               </ProtectedRoute>
             } />
             

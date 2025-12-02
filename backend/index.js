@@ -38,6 +38,7 @@ const transactionRoutes = require('./src/routes/transactionRoutes');
 const eventRoutes = require('./src/routes/eventRoutes');
 const promotionRoutes = require('./src/routes/promotionRoutes');
 const exportRoutes = require('./src/routes/exportRoutes');
+const analyticsRoutes = require('./src/routes/analyticsRoutes');
 
 // Mount routes
 app.use('/users', userRoutes);
@@ -46,6 +47,7 @@ app.use('/transactions', transactionRoutes);
 app.use('/events', eventRoutes);
 app.use('/promotions', promotionRoutes);
 app.use('/export', exportRoutes);
+app.use('/analytics', analyticsRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

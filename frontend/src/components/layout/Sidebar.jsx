@@ -12,7 +12,8 @@ import {
   Megaphone,
   ClipboardList,
   ArrowLeft,
-  UserPlus
+  UserPlus,
+  BarChart3
 } from 'lucide-react'
 import { getUser } from '@/utils/auth'
 import { useRoleView } from '@/context/RoleViewContext'
@@ -97,6 +98,10 @@ const Sidebar = () => {
                 <NavLink to="/manager/events" className={navLinkClass}>
                   <Calendar className="h-5 w-5" />
                   Manage Events
+                </NavLink>
+                <NavLink to="/manager/analytics" className={navLinkClass}>
+                  <BarChart3 className="h-5 w-5" />
+                  Analytics
                 </NavLink>
               </nav>
             </div>
