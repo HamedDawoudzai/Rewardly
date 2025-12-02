@@ -3,8 +3,9 @@ import { PageHeader } from '@/components/layout'
 import { DataTable } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Eye, Plus, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { Eye, Plus, Edit2, Trash2, CheckCircle, XCircle, Download } from 'lucide-react'
 import { promotionAPI } from '@/api/promotions'
+import { exportAPI } from '@/api/exports'
 
 const ITEMS_PER_PAGE = 10
 
@@ -20,6 +21,19 @@ const PromotionsManagementPage = () => {
   const [promotions, setPromotions] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+  const [exporting, setExporting] = useState(false)
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      await exportAPI.downloadPromotions()
+    } catch (err) {
+      console.error('Export failed:', err)
+      alert('Failed to export promotions. Please try again.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   // Update URL when state changes
   useEffect(() => {
@@ -177,12 +191,23 @@ const loadPromotions = async () => {
           { label: 'Promotions' }
         ]}
         actions={
-          <Link to="/manager/promotions/new">
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Promotion
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              <Download className="h-4 w-4" />
+              {exporting ? 'Exporting...' : 'Export CSV'}
             </Button>
-          </Link>
+            <Link to="/manager/promotions/new">
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create Promotion
+              </Button>
+            </Link>
+          </div>
         }
       />
 

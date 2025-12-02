@@ -102,6 +102,22 @@ const Sidebar = () => {
             </div>
           )}
 
+          {/* Organizer Section - Available to Manager, Superuser in role view */}
+          {isManager && (
+            <div>
+              <p className="px-4 text-xs font-semibold text-orange-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-orange-500"></span>
+                Organizer
+              </p>
+              <nav className="space-y-1">
+                <NavLink to="/organizer/events" className={navLinkClass}>
+                  <Calendar className="h-5 w-5" />
+                  My Events
+                </NavLink>
+              </nav>
+            </div>
+          )}
+
           {/* Superuser/Admin Section - Available only to Superuser */}
           {isSuperuser && (
             <div>
@@ -172,18 +188,21 @@ const Sidebar = () => {
           </nav>
         </div>
 
-        {/* Organize Section - Available to all users (any user can be an event organizer) */}
-        <div>
-          <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
-            Organize
-          </p>
-          <nav className="space-y-1">
-            <NavLink to="/organizer/events" className={navLinkClass}>
-              <Calendar className="h-5 w-5" />
-              My Events
-            </NavLink>
-          </nav>
-        </div>
+        {/* Organize Section - Available to regular users and cashiers only in user view */}
+        {/* Managers and superusers see this in their role view instead */}
+        {!isManager && (
+          <div>
+            <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+              Organize
+            </p>
+            <nav className="space-y-1">
+              <NavLink to="/organizer/events" className={navLinkClass}>
+                <Calendar className="h-5 w-5" />
+                My Events
+              </NavLink>
+            </nav>
+          </div>
+        )}
       </div>
     </aside>
   )
