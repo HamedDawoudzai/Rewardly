@@ -227,10 +227,23 @@ async function updateUser(userId, updates, requesterRole) {
   if (updates.role != null) {
     const newRole = await roleRepository.findRoleByName(updates.role);
     if (newRole) {
-      // Managers cannot promote users to manager or superuser
-      // Only superusers can do that
-      if (requesterRole === 'manager' && (updates.role === 'manager' || updates.role === 'superuser')) {
-        const error = new Error('Managers cannot promote users to manager or superuser');
+      const requesterRank = getRoleRank(requesterRole);
+      const targetRole = getUserRole(user);
+      const targetRank = getRoleRank(targetRole);
+      const newRoleRank = getRoleRank(updates.role);
+
+      // Security check 1: Cannot modify users with equal or higher rank (except superusers)
+      if (requesterRole !== 'superuser' && requesterRank <= targetRank) {
+        const error = new Error('You cannot modify users with equal or higher privileges');
+        error.code = 'FORBIDDEN';
+        throw error;
+      }
+
+      // Security check 2: Cannot promote to a role equal or higher than your own (except superusers)
+      // Managers can only assign: regular, cashier (ranks 1-2)
+      // Superusers can assign any role
+      if (requesterRole !== 'superuser' && newRoleRank >= requesterRank) {
+        const error = new Error(`You cannot promote users to ${updates.role} or higher`);
         error.code = 'FORBIDDEN';
         throw error;
       }
