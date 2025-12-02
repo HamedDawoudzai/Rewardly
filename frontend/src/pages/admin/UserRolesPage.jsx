@@ -4,12 +4,18 @@ import { DataTable } from '@/components/shared'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ShieldCheck, UserCog, AlertCircle, CheckCircle } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 
 import { usersAPI } from '@/api/users'
 import { PAGINATION_DEFAULTS } from '@/mock'
 
 const UserRolesPage = () => {
-  const [currentPage, setCurrentPage] = useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    return isNaN(page) || page < 1 ? 1 : page
+  })
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState([])
   const [totalPages, setTotalPages] = useState(1)
@@ -19,6 +25,16 @@ const UserRolesPage = () => {
   const [newRole, setNewRole] = useState('')
   const [updating, setUpdating] = useState(false)
   const [success, setSuccess] = useState(false)
+
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams()
+    
+    if (currentPage > 1) params.set('page', currentPage.toString())
+    if (searchTerm) params.set('search', searchTerm)
+    
+    setSearchParams(params, { replace: true })
+  }, [currentPage, searchTerm, setSearchParams])
 
   useEffect(() => {
     loadUsers()
@@ -166,6 +182,12 @@ const UserRolesPage = () => {
             itemsPerPage={PAGINATION_DEFAULTS.itemsPerPage}
             onPageChange={setCurrentPage}
             emptyMessage="No users found"
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            onSearch={(value) => {
+              setSearchTerm(value)
+              setCurrentPage(1)
+            }}
           />
         </div>
 

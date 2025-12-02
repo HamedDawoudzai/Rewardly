@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout'
 import { DataTable } from '@/components/shared'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Eye, AlertTriangle, Flag, FlagOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { adminTransactionAPI } from '@/api/transactions'
@@ -9,17 +9,36 @@ import { adminTransactionAPI } from '@/api/transactions'
 const ITEMS_PER_PAGE = 10
 
 const AllTransactionsPage = () => {
-  const [currentPage, setCurrentPage] = useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    return isNaN(page) || page < 1 ? 1 : page
+  })
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
   const [loading, setLoading] = useState(true)
   const [transactions, setTransactions] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const [filters, setFilters] = useState({
-    type: '',
-    name: '',
-    createdBy: '',
-    suspicious: ''
-  })
+  const [filters, setFilters] = useState(() => ({
+    type: searchParams.get('type') || '',
+    name: searchParams.get('name') || '',
+    createdBy: searchParams.get('createdBy') || '',
+    suspicious: searchParams.get('suspicious') || ''
+  }))
+
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams()
+    
+    if (currentPage > 1) params.set('page', currentPage.toString())
+    if (searchTerm) params.set('search', searchTerm)
+    if (filters.type) params.set('type', filters.type)
+    if (filters.name) params.set('name', filters.name)
+    if (filters.createdBy) params.set('createdBy', filters.createdBy)
+    if (filters.suspicious) params.set('suspicious', filters.suspicious)
+    
+    setSearchParams(params, { replace: true })
+  }, [currentPage, searchTerm, filters, setSearchParams])
 
   useEffect(() => {
     loadTransactions()
@@ -174,7 +193,11 @@ const AllTransactionsPage = () => {
         <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
         <select 
           value={filters.type}
-          onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+          onChange={(e) => {
+            setFilters({ ...filters, type: e.target.value })
+            setCurrentPage(1)
+            setSearchTerm('')
+          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         >
           <option value="">All Types</option>
@@ -190,7 +213,10 @@ const AllTransactionsPage = () => {
         <input
           type="text"
           value={filters.name}
-          onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+          onChange={(e) => {
+            setFilters({ ...filters, name: e.target.value })
+            setCurrentPage(1)
+          }}
           placeholder="Name or UTORid"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         />
@@ -200,7 +226,10 @@ const AllTransactionsPage = () => {
         <input
           type="text"
           value={filters.createdBy}
-          onChange={(e) => setFilters({ ...filters, createdBy: e.target.value })}
+          onChange={(e) => {
+            setFilters({ ...filters, createdBy: e.target.value })
+            setCurrentPage(1)
+          }}
           placeholder="UTORid"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         />
@@ -209,7 +238,11 @@ const AllTransactionsPage = () => {
         <label className="block text-sm font-medium text-gray-700 mb-1">Suspicious</label>
         <select 
           value={filters.suspicious}
-          onChange={(e) => setFilters({ ...filters, suspicious: e.target.value })}
+          onChange={(e) => {
+            setFilters({ ...filters, suspicious: e.target.value })
+            setCurrentPage(1)
+            setSearchTerm('')
+          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         >
           <option value="">All</option>
@@ -221,7 +254,11 @@ const AllTransactionsPage = () => {
         <Button 
           variant="outline" 
           className="w-full"
-          onClick={() => setFilters({ type: '', name: '', createdBy: '', suspicious: '' })}
+          onClick={() => {
+            setFilters({ type: '', name: '', createdBy: '', suspicious: '' })
+            setCurrentPage(1)
+            setSearchTerm('')
+          }}
         >
           Clear
         </Button>
@@ -255,6 +292,12 @@ const AllTransactionsPage = () => {
         onPageChange={setCurrentPage}
         filters={filterPanel}
         emptyMessage="No transactions found"
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        onSearch={(value) => {
+          setSearchTerm(value)
+          setCurrentPage(1)
+        }}
       />
     </div>
   )

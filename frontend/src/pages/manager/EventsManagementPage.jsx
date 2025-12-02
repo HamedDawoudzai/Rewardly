@@ -2,23 +2,41 @@ import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout'
 import { DataTable } from '@/components/shared'
 import { Button } from '@/components/ui/button'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Eye, Plus, Edit2, Trash2, Users, CheckCircle, XCircle } from 'lucide-react'
 import { eventAPI } from '@/api/events'
 
 const ITEMS_PER_PAGE = 10
 
 const EventsManagementPage = () => {
-  const [currentPage, setCurrentPage] = useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    return isNaN(page) || page < 1 ? 1 : page
+  })
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
   const [loading, setLoading] = useState(true)
   const [events, setEvents] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const [filters, setFilters] = useState({
-    published: '',
-    started: '',
-    ended: ''
-  })
+  const [filters, setFilters] = useState(() => ({
+    published: searchParams.get('published') || '',
+    started: searchParams.get('started') || '',
+    ended: searchParams.get('ended') || ''
+  }))
+
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams()
+    
+    if (currentPage > 1) params.set('page', currentPage.toString())
+    if (searchTerm) params.set('search', searchTerm)
+    if (filters.published) params.set('published', filters.published)
+    if (filters.started) params.set('started', filters.started)
+    if (filters.ended) params.set('ended', filters.ended)
+    
+    setSearchParams(params, { replace: true })
+  }, [currentPage, searchTerm, filters, setSearchParams])
 
   useEffect(() => {
     loadEvents()
@@ -166,7 +184,11 @@ const EventsManagementPage = () => {
         <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
         <select 
           value={filters.published}
-          onChange={(e) => setFilters({ ...filters, published: e.target.value })}
+          onChange={(e) => {
+            setFilters({ ...filters, published: e.target.value })
+            setCurrentPage(1)
+            setSearchTerm('')
+          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         >
           <option value="">All</option>
@@ -178,7 +200,11 @@ const EventsManagementPage = () => {
         <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
         <select 
           value={filters.started}
-          onChange={(e) => setFilters({ ...filters, started: e.target.value })}
+          onChange={(e) => {
+            setFilters({ ...filters, started: e.target.value })
+            setCurrentPage(1)
+            setSearchTerm('')
+          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         >
           <option value="">All Time</option>
@@ -190,7 +216,11 @@ const EventsManagementPage = () => {
         <Button 
           variant="outline" 
           className="w-full"
-          onClick={() => setFilters({ published: '', started: '', ended: '' })}
+          onClick={() => {
+            setFilters({ published: '', started: '', ended: '' })
+            setCurrentPage(1)
+            setSearchTerm('')
+          }}
         >
           Clear Filters
         </Button>
@@ -232,6 +262,12 @@ const EventsManagementPage = () => {
         onPageChange={setCurrentPage}
         filters={filterPanel}
         emptyMessage="No events found"
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        onSearch={(value) => {
+          setSearchTerm(value)
+          setCurrentPage(1)
+        }}
       />
     </div>
   )

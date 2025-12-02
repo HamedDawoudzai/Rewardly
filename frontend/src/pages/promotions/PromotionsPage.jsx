@@ -3,19 +3,34 @@ import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Pagination, EmptyState } from '@/components/shared'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Megaphone, Calendar, Tag, ArrowRight, Percent } from 'lucide-react'
 import { promotionAPI } from '@/api/promotions'
 
 const ITEMS_PER_PAGE = 4
 
 const PromotionsPage = () => {
-  const [currentPage, setCurrentPage] = useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    return isNaN(page) || page < 1 ? 1 : page
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [promotions, setPromotions] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+
+  // Update URL when page changes
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams)
+    if (currentPage === 1) {
+      params.delete('page')
+    } else {
+      params.set('page', currentPage.toString())
+    }
+    setSearchParams(params, { replace: true })
+  }, [currentPage, setSearchParams])
 
   useEffect(() => {
     loadPromotions()
