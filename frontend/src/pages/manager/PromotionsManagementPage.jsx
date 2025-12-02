@@ -2,19 +2,34 @@ import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout'
 import { DataTable } from '@/components/shared'
 import { Button } from '@/components/ui/button'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Eye, Plus, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react'
 import { promotionAPI } from '@/api/promotions'
 
 const ITEMS_PER_PAGE = 10
 
 const PromotionsManagementPage = () => {
-  const [currentPage, setCurrentPage] = useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    return isNaN(page) || page < 1 ? 1 : page
+  })
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [promotions, setPromotions] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams()
+    
+    if (currentPage > 1) params.set('page', currentPage.toString())
+    if (searchTerm) params.set('search', searchTerm)
+    
+    setSearchParams(params, { replace: true })
+  }, [currentPage, searchTerm, setSearchParams])
 
   useEffect(() => {
     loadPromotions()
@@ -190,6 +205,12 @@ const loadPromotions = async () => {
         itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={setCurrentPage}
         emptyMessage="No promotions found"
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        onSearch={(value) => {
+          setSearchTerm(value)
+          setCurrentPage(1)
+        }}
       />
     </div>
   )

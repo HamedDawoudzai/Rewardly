@@ -3,18 +3,33 @@ import { PageHeader } from '@/components/layout'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Pagination, EmptyState, DataTable } from '@/components/shared'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Calendar, MapPin, Users, Coins, Award, Edit, UserPlus, Eye, Clock } from 'lucide-react'
 import { eventAPI } from '@/api/events'
 
 const ITEMS_PER_PAGE = 10
 
 const MyEventsPage = () => {
-  const [currentPage, setCurrentPage] = useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    return isNaN(page) || page < 1 ? 1 : page
+  })
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
   const [loading, setLoading] = useState(true)
   const [events, setEvents] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams()
+    
+    if (currentPage > 1) params.set('page', currentPage.toString())
+    if (searchTerm) params.set('search', searchTerm)
+    
+    setSearchParams(params, { replace: true })
+  }, [currentPage, searchTerm, setSearchParams])
 
   useEffect(() => {
     loadMyEvents()
@@ -205,6 +220,14 @@ const MyEventsPage = () => {
                 columns={columns} 
                 data={events}
                 loading={loading}
+                searchable={true}
+                searchPlaceholder="Search events..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                onSearch={(value) => {
+                  setSearchTerm(value)
+                  setCurrentPage(1)
+                }}
               />
             </CardContent>
           </Card>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout";
 import { DataTable } from "@/components/shared";
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { Eye, UserPlus, CheckCircle, XCircle, Edit2 } from "lucide-react";
 
@@ -14,7 +14,12 @@ import EditUserModal from "@/components/modals/EditUserModal";
 
 const UsersManagementPage = () => {
   const navigate = useNavigate();
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    return isNaN(page) || page < 1 ? 1 : page
+  });
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '');
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -25,11 +30,24 @@ const UsersManagementPage = () => {
 
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [filters, setFilters] = useState({
-    role: "",
-    verified: "",
-    activated: "",
-  });
+  const [filters, setFilters] = useState(() => ({
+    role: searchParams.get('role') || "",
+    verified: searchParams.get('verified') || "",
+    activated: searchParams.get('activated') || "",
+  }));
+
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    if (currentPage > 1) params.set('page', currentPage.toString());
+    if (searchTerm) params.set('search', searchTerm);
+    if (filters.role) params.set('role', filters.role);
+    if (filters.verified) params.set('verified', filters.verified);
+    if (filters.activated) params.set('activated', filters.activated);
+    
+    setSearchParams(params, { replace: true });
+  }, [currentPage, searchTerm, filters, setSearchParams]);
 
   useEffect(() => {
     loadUsers();
@@ -220,6 +238,7 @@ const UsersManagementPage = () => {
           onChange={(e) => {
             setCurrentPage(1);
             setFilters({ ...filters, role: e.target.value });
+            setSearchTerm('');
           }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         >
@@ -240,6 +259,7 @@ const UsersManagementPage = () => {
           onChange={(e) => {
             setCurrentPage(1);
             setFilters({ ...filters, verified: e.target.value });
+            setSearchTerm('');
           }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         >
@@ -258,6 +278,7 @@ const UsersManagementPage = () => {
           onChange={(e) => {
             setCurrentPage(1);
             setFilters({ ...filters, activated: e.target.value });
+            setSearchTerm('');
           }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         >
@@ -274,6 +295,7 @@ const UsersManagementPage = () => {
           onClick={() => {
             setCurrentPage(1);
             setFilters({ role: "", verified: "", activated: "" });
+            setSearchTerm('');
           }}
         >
           Clear Filters
@@ -324,6 +346,12 @@ const UsersManagementPage = () => {
         onPageChange={setCurrentPage}
         filters={filterPanel}
         emptyMessage="No users found"
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        onSearch={(value) => {
+          setSearchTerm(value);
+          setCurrentPage(1);
+        }}
       />
 
       {/* Edit User Modal */}

@@ -1,5 +1,5 @@
 import { ArrowUpDown, ArrowUp, ArrowDown, Search, Filter, X } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import Pagination from './Pagination'
 
@@ -20,9 +20,11 @@ const DataTable = ({
   onSort,
   onSearch,
   filters,
-  onFilterChange
+  onFilterChange,
+  searchValue = '',
+  onSearchChange
 }) => {
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState(searchValue)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [showFilters, setShowFilters] = useState(false)
 
@@ -38,10 +40,18 @@ const DataTable = ({
     onSort?.(columnKey, direction)
   }
 
+  // Sync searchTerm with searchValue prop if provided (controlled component)
+  useEffect(() => {
+    if (searchValue !== undefined) {
+      setSearchTerm(searchValue)
+    }
+  }, [searchValue])
+
   const handleSearch = (e) => {
     const value = e.target.value
     setSearchTerm(value)
     onSearch?.(value)
+    onSearchChange?.(value)
   }
 
   const getSortIcon = (columnKey) => {
@@ -133,6 +143,7 @@ const DataTable = ({
                     onClick={() => {
                       setSearchTerm('')
                       onSearch?.('')
+                      onSearchChange?.('')
                     }}
                     className="absolute right-3 top-1/2 -translate-y-1/2"
                   >

@@ -1,26 +1,48 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout'
 import { DataTable } from '@/components/shared'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { transactionAPI } from '@/api/transactions'
 
 const TransactionsPage = () => {
-  const [currentPage, setCurrentPage] = useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    return isNaN(page) || page < 1 ? 1 : page
+  })
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
   const [loading, setLoading] = useState(true)
   const [transactions, setTransactions] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const [filters, setFilters] = useState({
-    type: '',
-    relatedId: '',
-    promotionId: '',
-    amount: '',
-    operator: 'gte'
-  })
+  const [filters, setFilters] = useState(() => ({
+    type: searchParams.get('type') || '',
+    relatedId: searchParams.get('relatedId') || '',
+    promotionId: searchParams.get('promotionId') || '',
+    amount: searchParams.get('amount') || '',
+    operator: searchParams.get('operator') || 'gte'
+  }))
 
   const itemsPerPage = 10
+
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams()
+    
+    if (currentPage > 1) params.set('page', currentPage.toString())
+    if (searchTerm) params.set('search', searchTerm)
+    if (filters.type) params.set('type', filters.type)
+    if (filters.relatedId) params.set('relatedId', filters.relatedId)
+    if (filters.promotionId) params.set('promotionId', filters.promotionId)
+    if (filters.amount) {
+      params.set('amount', filters.amount)
+      if (filters.operator !== 'gte') params.set('operator', filters.operator)
+    }
+    
+    setSearchParams(params, { replace: true })
+  }, [currentPage, searchTerm, filters, setSearchParams])
 
   useEffect(() => {
     loadTransactions()
@@ -167,6 +189,7 @@ const TransactionsPage = () => {
           onChange={(e) => {
             setFilters({ ...filters, type: e.target.value })
             setCurrentPage(1)
+            setSearchTerm('')
           }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm"
         >
@@ -183,7 +206,10 @@ const TransactionsPage = () => {
         <input
           type="text"
           value={filters.relatedId}
-          onChange={(e) => setFilters({ ...filters, relatedId: e.target.value })}
+          onChange={(e) => {
+            setFilters({ ...filters, relatedId: e.target.value })
+            setCurrentPage(1)
+          }}
           placeholder="User ID or Event ID"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm"
         />
@@ -193,7 +219,10 @@ const TransactionsPage = () => {
         <div className="flex gap-2">
           <select
             value={filters.operator}
-            onChange={(e) => setFilters({ ...filters, operator: e.target.value })}
+            onChange={(e) => {
+              setFilters({ ...filters, operator: e.target.value })
+              setCurrentPage(1)
+            }}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm"
           >
             <option value="gte">≥</option>
@@ -202,7 +231,10 @@ const TransactionsPage = () => {
           <input
             type="number"
             value={filters.amount}
-            onChange={(e) => setFilters({ ...filters, amount: e.target.value })}
+            onChange={(e) => {
+              setFilters({ ...filters, amount: e.target.value })
+              setCurrentPage(1)
+            }}
             placeholder="Amount"
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm"
           />
@@ -214,6 +246,7 @@ const TransactionsPage = () => {
           onClick={() => {
             setFilters({ type: '', relatedId: '', promotionId: '', amount: '', operator: 'gte' })
             setCurrentPage(1)
+            setSearchTerm('')
           }}
           className="w-full"
         >
@@ -248,6 +281,12 @@ const TransactionsPage = () => {
         onPageChange={setCurrentPage}
         filters={filterPanel}
         emptyMessage="No transactions found"
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        onSearch={(value) => {
+          setSearchTerm(value)
+          setCurrentPage(1)
+        }}
       />
     </div>
   )
