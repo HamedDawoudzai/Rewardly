@@ -37,7 +37,8 @@ export {
   PromotionsManagementPage,
   CreatePromotionPage,
   EventsManagementPage,
-  CreateEventPage
+  CreateEventPage,
+  AnalyticsPage
 } from './manager'
 
 // Event Organizer
