@@ -4,9 +4,10 @@ import { DataTable } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import { Eye, UserPlus, CheckCircle, XCircle, Edit2 } from "lucide-react";
+import { Eye, UserPlus, CheckCircle, XCircle, Edit2, Download } from "lucide-react";
 
 import { usersAPI } from "@/api/users";
+import { exportAPI } from "@/api/exports";
 import { PAGINATION_DEFAULTS } from "@/mock";
 import { getUser } from "@/utils/auth";
 
@@ -29,6 +30,23 @@ const UsersManagementPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
 
   const [errorMessage, setErrorMessage] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportAPI.downloadUsers({
+        role: filters.role || undefined,
+        verified: filters.verified || undefined,
+        activated: filters.activated || undefined
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      showError('Failed to export users. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const [filters, setFilters] = useState(() => ({
     role: searchParams.get('role') || "",
@@ -315,13 +333,24 @@ const UsersManagementPage = () => {
           { label: "Users" },
         ]}
         actions={
-          <Button
-            className="gap-2"
-            onClick={() => navigate("/cashier/users")}
-          >
-            <UserPlus className="h-4 w-4" />
-            Create User
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              <Download className="h-4 w-4" />
+              {exporting ? 'Exporting...' : 'Export CSV'}
+            </Button>
+            <Button
+              className="gap-2"
+              onClick={() => navigate("/cashier/users")}
+            >
+              <UserPlus className="h-4 w-4" />
+              Create User
+            </Button>
+          </div>
         }
       />
 

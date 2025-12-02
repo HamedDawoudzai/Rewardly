@@ -4,19 +4,33 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/shared'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Users, UserPlus, AlertCircle, CheckCircle, Calendar, MapPin, Coins } from 'lucide-react'
+import { ArrowLeft, Users, UserPlus, AlertCircle, CheckCircle, Calendar, MapPin, Coins, Download } from 'lucide-react'
 import { eventAPI } from '@/api/events'
+import { exportAPI } from '@/api/exports'
 
 const ManageGuestsPage = () => {
   const { id } = useParams()
   
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [event, setEvent] = useState(null)
   const [guests, setGuests] = useState([])
   const [utorid, setUtorid] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      await exportAPI.downloadEventAttendance(id)
+    } catch (err) {
+      console.error('Export failed:', err)
+      setError('Failed to export attendance. Please try again.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   useEffect(() => {
     loadEvent()
@@ -118,12 +132,23 @@ const ManageGuestsPage = () => {
           { label: 'Manage Guests' }
         ]}
         actions={
-          <Link to="/organizer/events">
-            <Button variant="outline" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              <Download className="h-4 w-4" />
+              {exporting ? 'Exporting...' : 'Export Attendance'}
             </Button>
-          </Link>
+            <Link to="/organizer/events">
+              <Button variant="outline" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+            </Link>
+          </div>
         }
       />
 

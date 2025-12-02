@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout'
 import { DataTable } from '@/components/shared'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Eye, AlertTriangle, Flag, FlagOff } from 'lucide-react'
+import { Eye, AlertTriangle, Flag, FlagOff, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { adminTransactionAPI } from '@/api/transactions'
+import { exportAPI } from '@/api/exports'
 
 const ITEMS_PER_PAGE = 10
 
@@ -19,12 +20,28 @@ const AllTransactionsPage = () => {
   const [transactions, setTransactions] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+  const [exporting, setExporting] = useState(false)
   const [filters, setFilters] = useState(() => ({
     type: searchParams.get('type') || '',
     name: searchParams.get('name') || '',
     createdBy: searchParams.get('createdBy') || '',
     suspicious: searchParams.get('suspicious') || ''
   }))
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      await exportAPI.downloadTransactions({
+        type: filters.type || undefined,
+        status: undefined
+      })
+    } catch (error) {
+      console.error('Export failed:', error)
+      alert('Failed to export transactions. Please try again.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   // Update URL when state changes
   useEffect(() => {
@@ -276,6 +293,17 @@ const AllTransactionsPage = () => {
           { label: 'Manager' },
           { label: 'Transactions' }
         ]}
+        actions={
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={handleExport}
+            disabled={exporting}
+          >
+            <Download className="h-4 w-4" />
+            {exporting ? 'Exporting...' : 'Export CSV'}
+          </Button>
+        }
       />
 
       <DataTable
