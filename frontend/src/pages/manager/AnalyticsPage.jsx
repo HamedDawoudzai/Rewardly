@@ -8,25 +8,22 @@ import {
   Minus, 
   DollarSign, 
   Calendar, 
-  Target, 
   BarChart3,
-  Activity,
   Percent,
-  Brain
+  Hash,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react'
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
   Area,
   AreaChart,
-  ComposedChart,
-  Bar
+  Bar,
+  BarChart
 } from 'recharts'
 import { analyticsAPI } from '@/api/analytics'
 
@@ -45,45 +42,17 @@ const AnalyticsPage = () => {
     setLoading(true)
     setError('')
     try {
-      const [forecastResponse, statsResponse] = await Promise.all([
-        analyticsAPI.getSpendingForecast({ period, lookback: 12, predict: 4 }),
+      const [trendsResponse, statsResponse] = await Promise.all([
+        analyticsAPI.getSpendingTrends({ period }),
         analyticsAPI.getStats()
       ])
-      setData(forecastResponse)
+      setData(trendsResponse)
       setStats(statsResponse)
     } catch (err) {
       console.error('Failed to load analytics:', err)
       setError(err.message || 'Failed to load analytics data')
     } finally {
       setLoading(false)
-    }
-  }
-
-  // Combine historical + predictions for chart
-  const chartData = data ? [
-    ...data.historical.map(d => ({ 
-      ...d, 
-      type: 'historical',
-      historicalSpending: d.spending,
-      predictedSpending: null
-    })),
-    ...data.predictions.map(d => ({ 
-      ...d, 
-      type: 'predicted',
-      historicalSpending: null,
-      predictedSpending: d.spending
-    }))
-  ] : []
-
-  // Add a connecting point between historical and predicted
-  if (chartData.length > 0 && data?.historical.length > 0 && data?.predictions.length > 0) {
-    const lastHistorical = data.historical[data.historical.length - 1]
-    const firstPrediction = data.predictions[0]
-    
-    // Find the index where predictions start and add the last historical value there too
-    const predictionStartIndex = data.historical.length
-    if (chartData[predictionStartIndex]) {
-      chartData[predictionStartIndex].historicalSpending = lastHistorical.spending
     }
   }
 
@@ -105,12 +74,6 @@ const AnalyticsPage = () => {
     return 'bg-gray-100 dark:bg-gray-700'
   }
 
-  const getConfidenceLabel = (confidence) => {
-    if (confidence >= 0.8) return { text: 'High', color: 'text-green-600' }
-    if (confidence >= 0.5) return { text: 'Medium', color: 'text-yellow-600' }
-    return { text: 'Low', color: 'text-red-600' }
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -126,7 +89,7 @@ const AnalyticsPage = () => {
     <div>
       <PageHeader
         title="Spending Analytics"
-        subtitle="Forecast future spending trends using machine learning"
+        subtitle="Analyze transaction spending trends over time"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Manager' },
@@ -217,21 +180,16 @@ const AnalyticsPage = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-900/20 dark:to-gray-800 border-orange-100 dark:border-orange-800">
+            <Card className="bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/20 dark:to-gray-800 border-indigo-100 dark:border-indigo-800">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-orange-100 dark:bg-orange-900/50 rounded-xl">
-                    <Target className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                  <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
+                    <Hash className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Next {period === 'daily' ? 'day' : period === 'weekly' ? 'week' : 'month'} Forecast
-                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Transactions</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      ${data.summary.forecast.nextPeriod.toLocaleString()}
-                    </p>
-                    <p className={`text-xs ${getConfidenceLabel(data.summary.forecast.confidence).color}`}>
-                      {Math.round(data.summary.forecast.confidence * 100)}% confidence ({getConfidenceLabel(data.summary.forecast.confidence).text})
+                      {data.summary.transactionCount.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -246,36 +204,28 @@ const AnalyticsPage = () => {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="h-5 w-5 text-rewardly-blue" />
-                    Spending Trend & Forecast
+                    Spending Trends
                   </CardTitle>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {data.summary.trend.description}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    Historical
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                    Predicted
-                  </span>
-                </div>
+                {data.meta && (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 text-right">
+                    <p>{data.meta.dataRange.start} to {data.meta.dataRange.end}</p>
+                    <p className="text-xs">{data.meta.periodsAnalyzed} {period === 'daily' ? 'days' : period === 'weekly' ? 'weeks' : 'months'} analyzed</p>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                  <AreaChart data={data.historical} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                     <defs>
-                      <linearGradient id="historicalGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <linearGradient id="spendingGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
                         <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="predictedGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -284,6 +234,10 @@ const AnalyticsPage = () => {
                       tick={{ fontSize: 11, fill: '#6b7280' }}
                       tickLine={false}
                       axisLine={{ stroke: '#e5e7eb' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      interval={period === 'daily' ? 6 : 0}
                     />
                     <YAxis 
                       tickFormatter={(value) => `$${value}`}
@@ -292,128 +246,59 @@ const AnalyticsPage = () => {
                       axisLine={{ stroke: '#e5e7eb' }}
                     />
                     <Tooltip 
-                      formatter={(value, name) => [
-                        value ? `$${value.toLocaleString()}` : '-',
-                        name === 'historicalSpending' ? 'Historical' : 'Predicted'
-                      ]}
+                      formatter={(value) => [`$${value.toLocaleString()}`, 'Spending']}
+                      labelFormatter={(label) => label}
                       contentStyle={{ 
                         borderRadius: '8px', 
                         border: '1px solid #e5e7eb',
                         boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
                       }}
                     />
-                    
-                    {/* Historical data area */}
                     <Area
                       type="monotone"
-                      dataKey="historicalSpending"
+                      dataKey="spending"
                       stroke="#3b82f6"
                       strokeWidth={2}
-                      fill="url(#historicalGradient)"
-                      dot={{ fill: '#3b82f6', strokeWidth: 2 }}
+                      fill="url(#spendingGradient)"
+                      dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
                       activeDot={{ r: 6 }}
-                      connectNulls
                     />
-                    
-                    {/* Predicted data area */}
-                    <Area
-                      type="monotone"
-                      dataKey="predictedSpending"
-                      stroke="#f97316"
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      fill="url(#predictedGradient)"
-                      dot={{ fill: '#f97316', strokeWidth: 2 }}
-                      activeDot={{ r: 6 }}
-                      connectNulls
-                    />
-                  </ComposedChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
-              
-              {/* Predictions Table */}
-              {data.predictions.length > 0 && (
+
+              {/* Min/Max/StdDev Stats */}
+              {data.summary.minSpending !== undefined && (
                 <div className="mt-6 border-t dark:border-gray-700 pt-4">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                    <Brain className="h-4 w-4 text-orange-500" />
-                    ML Forecasted Spending
-                  </h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {data.predictions.map((pred, i) => (
-                      <div 
-                        key={i} 
-                        className="p-4 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-900/10 rounded-xl border border-orange-200 dark:border-orange-800"
-                      >
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{pred.label}</p>
-                        <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
-                          ${pred.spending.toLocaleString()}
-                        </p>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Minimum</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-1">
+                        <ArrowDownRight className="h-4 w-4 text-red-500" />
+                        ${data.summary.minSpending.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Maximum</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-1">
+                        <ArrowUpRight className="h-4 w-4 text-green-500" />
+                        ${data.summary.maxSpending.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Std Deviation</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white">
+                        ±${data.summary.standardDeviation.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Model Info & Stats */}
+          {/* Stats */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Regression Model Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Activity className="h-5 w-5 text-purple-500" />
-                  Linear Regression Model
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <span className="text-gray-600 dark:text-gray-400">Algorithm</span>
-                    <span className="font-mono text-sm font-medium">y = mx + b</span>
-                  </div>
-                  
-                  {data.regression && (
-                    <>
-                      <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <span className="text-gray-600 dark:text-gray-400">Slope (m)</span>
-                        <span className="font-mono font-medium text-blue-600">
-                          ${data.regression.slope}/period
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <span className="text-gray-600 dark:text-gray-400">Intercept (b)</span>
-                        <span className="font-mono font-medium">
-                          ${data.regression.intercept}
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <span className="text-gray-600 dark:text-gray-400">R² Score</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-green-500 rounded-full"
-                              style={{ width: `${Math.round(data.regression.rSquared * 100)}%` }}
-                            />
-                          </div>
-                          <span className="font-mono font-medium">
-                            {Math.round(data.regression.rSquared * 100)}%
-                          </span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <span className="text-gray-600 dark:text-gray-400">Data Points</span>
-                    <span className="font-medium">{data.historical.length} periods</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Transaction Stats */}
             {stats && (
               <Card>
@@ -462,4 +347,3 @@ const AnalyticsPage = () => {
 }
 
 export default AnalyticsPage
-

@@ -2,21 +2,20 @@
 
 /**
  * Analytics Controller
- * Handles HTTP requests for analytics and forecasting
+ * Handles HTTP requests for analytics and trend analysis
  */
 
 const analyticsService = require('../services/analyticsService');
 
 /**
- * GET /analytics/spending-forecast
- * Get spending forecast using linear regression
- * Query params: period (daily|weekly|monthly), lookback, predict
+ * GET /analytics/spending-trends
+ * Get spending trend analysis using linear regression
+ * Query params: period (daily|weekly|monthly), lookback
  */
-async function getSpendingForecast(req, res) {
+async function getSpendingTrends(req, res) {
   try {
     const period = req.query.period || 'weekly';
-    const lookback = parseInt(req.query.lookback) || 12;
-    const predict = parseInt(req.query.predict) || 4;
+    const lookback = req.query.lookback ? parseInt(req.query.lookback) : null;
 
     // Validate period
     if (!['daily', 'weekly', 'monthly'].includes(period)) {
@@ -25,25 +24,19 @@ async function getSpendingForecast(req, res) {
       });
     }
 
-    // Validate lookback and predict
-    if (lookback < 1 || lookback > 52) {
+    // Validate lookback if provided
+    if (lookback !== null && (lookback < 1 || lookback > 365)) {
       return res.status(400).json({ 
-        error: 'Lookback must be between 1 and 52' 
+        error: 'Lookback must be between 1 and 365' 
       });
     }
 
-    if (predict < 1 || predict > 12) {
-      return res.status(400).json({ 
-        error: 'Predict must be between 1 and 12' 
-      });
-    }
-
-    const forecast = await analyticsService.getSpendingForecast(period, lookback, predict);
-    return res.status(200).json(forecast);
+    const trends = await analyticsService.getSpendingTrends(period, lookback);
+    return res.status(200).json(trends);
 
   } catch (error) {
-    console.error('Error getting spending forecast:', error);
-    return res.status(500).json({ error: 'Failed to generate spending forecast' });
+    console.error('Error getting spending trends:', error);
+    return res.status(500).json({ error: 'Failed to generate spending trends' });
   }
 }
 
@@ -63,7 +56,6 @@ async function getTransactionStats(req, res) {
 }
 
 module.exports = {
-  getSpendingForecast,
+  getSpendingTrends,
   getTransactionStats
 };
-

@@ -2,7 +2,7 @@
 
 /**
  * Analytics Service
- * Provides spending forecasts and trend analysis using linear regression
+ * Provides spending trend analysis using linear regression
  */
 
 const { PrismaClient } = require('@prisma/client');
@@ -11,20 +11,34 @@ const ss = require('simple-statistics');
 const prisma = new PrismaClient();
 
 /**
- * Get spending forecast using linear regression
+ * Get spending trends using linear regression
  * @param {string} period - 'daily', 'weekly', or 'monthly'
- * @param {number} lookback - Number of periods to analyze
- * @param {number} predictPeriods - Number of future periods to predict
+ * @param {number} lookback - Number of periods to analyze (defaults to ~3 months)
  */
-async function getSpendingForecast(period = 'weekly', lookback = 12, predictPeriods = 4) {
-  // 1. Fetch purchase transactions
+async function getSpendingTrends(period = 'weekly', lookback = null) {
+  // Default lookback to ~3 months based on period type
+  if (lookback === null) {
+    if (period === 'daily') {
+      lookback = 90;  // 90 days = ~3 months
+    } else if (period === 'weekly') {
+      lookback = 12;  // 12 weeks = ~3 months
+    } else {
+      lookback = 3;   // 3 months
+    }
+  }
+
+  // 1. Calculate the date range ending at current date
+  const now = new Date();
   const startDate = getStartDate(period, lookback);
   
   const transactions = await prisma.transaction.findMany({
     where: {
       type: 'purchase',
       status: 'posted',
-      createdAt: { gte: startDate }
+      createdAt: { 
+        gte: startDate,
+        lte: now
+      }
     },
     select: {
       totalCents: true,
@@ -33,8 +47,8 @@ async function getSpendingForecast(period = 'weekly', lookback = 12, predictPeri
     orderBy: { createdAt: 'asc' }
   });
 
-  // 2. Aggregate by period
-  const aggregated = aggregateByPeriod(transactions, period);
+  // 2. Aggregate by period with proper date labels
+  const aggregated = aggregateByPeriod(transactions, period, startDate, now);
   
   // 3. If not enough data, return early with basic stats
   if (aggregated.length < 3) {
@@ -43,20 +57,24 @@ async function getSpendingForecast(period = 'weekly', lookback = 12, predictPeri
       summary: {
         totalSpending: Math.round(total * 100) / 100,
         averagePerPeriod: aggregated.length > 0 ? Math.round((total / aggregated.length) * 100) / 100 : 0,
+        transactionCount: transactions.length,
         trend: { 
           direction: 'neutral', 
           percentage: 0, 
           description: 'Not enough data for trend analysis (need at least 3 periods)' 
-        },
-        forecast: { 
-          nextPeriod: 0, 
-          next4Periods: 0,
-          confidence: 0 
         }
       },
       historical: aggregated,
-      predictions: [],
-      regression: null
+      regression: null,
+      meta: {
+        period,
+        lookback,
+        dataRange: {
+          start: startDate.toISOString().split('T')[0],
+          end: now.toISOString().split('T')[0]
+        },
+        periodsAnalyzed: aggregated.length
+      }
     };
   }
 
@@ -68,50 +86,47 @@ async function getSpendingForecast(period = 'weekly', lookback = 12, predictPeri
   const regressionLine = ss.linearRegressionLine(regression);
   const rSquared = ss.rSquared(dataPoints, regressionLine);
 
-  // 6. Generate predictions
-  const predictions = [];
-  const lastIndex = dataPoints.length;
-  const lastDate = new Date(aggregated[aggregated.length - 1].period);
-  
-  for (let i = 1; i <= predictPeriods; i++) {
-    const predictedSpending = Math.max(0, regressionLine(lastIndex + i));
-    const futureDate = addPeriod(lastDate, period, i);
-    
-    predictions.push({
-      period: futureDate.toISOString().split('T')[0],
-      label: `${getPeriodLabel(period)} ${lastIndex + i} (Predicted)`,
-      spending: Math.round(predictedSpending * 100) / 100,
-      isPrediction: true
-    });
-  }
-
-  // 7. Calculate trend
+  // 6. Calculate trend
   const avgSpending = ss.mean(dataPoints.map(d => d[1]));
   const trendPercentage = avgSpending > 0 ? (regression.m / avgSpending) * 100 : 0;
   const trendDirection = regression.m > 0.01 ? 'up' : regression.m < -0.01 ? 'down' : 'neutral';
+
+  // 7. Calculate additional statistics
+  const spendingValues = dataPoints.map(d => d[1]);
+  const minSpending = Math.min(...spendingValues);
+  const maxSpending = Math.max(...spendingValues);
+  const stdDev = ss.standardDeviation(spendingValues);
 
   // 8. Build response
   return {
     summary: {
       totalSpending: Math.round(aggregated.reduce((sum, d) => sum + d.spending, 0) * 100) / 100,
       averagePerPeriod: Math.round(avgSpending * 100) / 100,
+      transactionCount: transactions.length,
+      minSpending: Math.round(minSpending * 100) / 100,
+      maxSpending: Math.round(maxSpending * 100) / 100,
+      standardDeviation: Math.round(stdDev * 100) / 100,
       trend: {
         direction: trendDirection,
         percentage: Math.round(Math.abs(trendPercentage) * 10) / 10,
-        description: getTrendDescription(trendDirection, trendPercentage, period)
-      },
-      forecast: {
-        nextPeriod: predictions[0]?.spending || 0,
-        next4Periods: Math.round(predictions.reduce((sum, p) => sum + p.spending, 0) * 100) / 100,
-        confidence: Math.round(Math.max(0, Math.min(1, rSquared)) * 100) / 100
+        description: getTrendDescription(trendDirection, trendPercentage, period),
+        slopePerPeriod: Math.round(regression.m * 100) / 100
       }
     },
     historical: aggregated,
-    predictions,
     regression: {
       slope: Math.round(regression.m * 100) / 100,
       intercept: Math.round(regression.b * 100) / 100,
       rSquared: Math.round(Math.max(0, Math.min(1, rSquared)) * 100) / 100
+    },
+    meta: {
+      period,
+      lookback,
+      dataRange: {
+        start: startDate.toISOString().split('T')[0],
+        end: now.toISOString().split('T')[0]
+      },
+      periodsAnalyzed: aggregated.length
     }
   };
 }
@@ -164,26 +179,91 @@ async function getTransactionStats() {
 }
 
 /**
- * Aggregate transactions by time period
+ * Aggregate transactions by time period with proper date labels
  */
-function aggregateByPeriod(transactions, period) {
+function aggregateByPeriod(transactions, period, startDate, endDate) {
   const buckets = new Map();
 
+  // First, create buckets for all periods in the range (even if empty)
+  const allPeriods = generatePeriodRange(startDate, endDate, period);
+  for (const p of allPeriods) {
+    buckets.set(p.key, { ...p, spending: 0 });
+  }
+
+  // Then, fill in spending data
   for (const tx of transactions) {
     const key = getPeriodKey(tx.createdAt, period);
-    const current = buckets.get(key) || 0;
-    buckets.set(key, current + (tx.totalCents || 0) / 100);
+    if (buckets.has(key)) {
+      const bucket = buckets.get(key);
+      bucket.spending += (tx.totalCents || 0) / 100;
+    }
   }
 
   // Convert to array and sort by date
-  const sorted = Array.from(buckets.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]));
+  return Array.from(buckets.values())
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .map(item => ({
+      period: item.key,
+      label: item.label,
+      spending: Math.round(item.spending * 100) / 100
+    }));
+}
 
-  return sorted.map(([periodKey, spending], index) => ({
-    period: periodKey,
-    label: `${getPeriodLabel(period)} ${index + 1}`,
-    spending: Math.round(spending * 100) / 100
-  }));
+/**
+ * Generate all period keys and labels in a date range
+ */
+function generatePeriodRange(startDate, endDate, period) {
+  const periods = [];
+  const current = new Date(startDate);
+  
+  while (current <= endDate) {
+    const key = getPeriodKey(current, period);
+    const label = formatPeriodLabel(current, period);
+    
+    // Check if we already have this period (avoid duplicates)
+    if (!periods.find(p => p.key === key)) {
+      periods.push({ key, label });
+    }
+    
+    // Move to next period
+    if (period === 'daily') {
+      current.setDate(current.getDate() + 1);
+    } else if (period === 'weekly') {
+      current.setDate(current.getDate() + 7);
+    } else {
+      current.setMonth(current.getMonth() + 1);
+    }
+  }
+  
+  return periods;
+}
+
+/**
+ * Format a human-readable label for a period
+ */
+function formatPeriodLabel(date, period) {
+  const d = new Date(date);
+  
+  if (period === 'daily') {
+    // Format: "Dec 2"
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } else if (period === 'weekly') {
+    // Format: "Nov 25 - Dec 1"
+    const weekStart = new Date(d);
+    const day = weekStart.getDay();
+    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+    weekStart.setDate(diff);
+    
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    
+    const startStr = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const endStr = weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${startStr} - ${endStr}`;
+  } else {
+    // Format: "Nov 2024"
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }
 }
 
 /**
@@ -222,31 +302,10 @@ function getStartDate(period, lookback) {
     now.setMonth(now.getMonth() - lookback);
   }
   
+  // Set to start of day
+  now.setHours(0, 0, 0, 0);
+  
   return now;
-}
-
-/**
- * Add periods to a date
- */
-function addPeriod(date, period, count) {
-  const result = new Date(date);
-  
-  if (period === 'daily') {
-    result.setDate(result.getDate() + count);
-  } else if (period === 'weekly') {
-    result.setDate(result.getDate() + (count * 7));
-  } else if (period === 'monthly') {
-    result.setMonth(result.getMonth() + count);
-  }
-  
-  return result;
-}
-
-/**
- * Get human-readable period label
- */
-function getPeriodLabel(period) {
-  return period === 'daily' ? 'Day' : period === 'weekly' ? 'Week' : 'Month';
 }
 
 /**
@@ -265,7 +324,6 @@ function getTrendDescription(direction, percentage, period) {
 }
 
 module.exports = {
-  getSpendingForecast,
+  getSpendingTrends,
   getTransactionStats
 };
-

@@ -1,27 +1,25 @@
 /**
  * Analytics API
- * Handles requests for spending forecasts and statistics
+ * Handles requests for spending trends and statistics
  */
 
 import { apiFetch } from './api';
 
 export const analyticsAPI = {
   /**
-   * Get spending forecast using linear regression
+   * Get spending trend analysis using linear regression
    * @param {Object} params - Query parameters
    * @param {string} params.period - 'daily', 'weekly', or 'monthly'
    * @param {number} params.lookback - Number of periods to analyze
-   * @param {number} params.predict - Number of future periods to predict
    */
-  async getSpendingForecast(params = {}) {
+  async getSpendingTrends(params = {}) {
     const queryParams = new URLSearchParams();
     
     if (params.period) queryParams.append('period', params.period);
     if (params.lookback) queryParams.append('lookback', params.lookback);
-    if (params.predict) queryParams.append('predict', params.predict);
     
     const queryString = queryParams.toString();
-    const url = `/analytics/spending-forecast${queryString ? `?${queryString}` : ''}`;
+    const url = `/analytics/spending-trends${queryString ? `?${queryString}` : ''}`;
     
     return apiFetch(url);
   },
@@ -33,4 +31,3 @@ export const analyticsAPI = {
     return apiFetch('/analytics/stats');
   }
 };
-

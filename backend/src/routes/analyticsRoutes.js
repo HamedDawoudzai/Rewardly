@@ -2,14 +2,14 @@
 
 /**
  * Analytics Routes
- * Endpoints for spending forecasts and statistics
+ * Endpoints for spending trends and statistics
  */
 
 const express = require('express');
 const router = express.Router();
 
 const {
-  getSpendingForecast,
+  getSpendingTrends,
   getTransactionStats
 } = require('../controllers/analyticsController');
 
@@ -21,11 +21,11 @@ router.use(authenticate);
 router.use(requireRankAtLeast('manager'));
 
 /**
- * GET /analytics/spending-forecast
- * Get spending forecast using linear regression
- * Query params: period (daily|weekly|monthly), lookback, predict
+ * GET /analytics/spending-trends
+ * Get spending trend analysis using linear regression
+ * Query params: period (daily|weekly|monthly), lookback
  */
-router.get('/spending-forecast', getSpendingForecast);
+router.get('/spending-trends', getSpendingTrends);
 
 /**
  * GET /analytics/stats
@@ -34,4 +34,3 @@ router.get('/spending-forecast', getSpendingForecast);
 router.get('/stats', getTransactionStats);
 
 module.exports = router;
-
