@@ -41,7 +41,25 @@ Create a `.env` file in the root directory:
 ```
 JWT_SECRET=your-secret-key-here
 NODE_ENV=development
+
+# Email Configuration (for sending activation emails)
+# Required for production, optional for development (emails will be logged)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM=noreply@rewardly.com
+FRONTEND_URL=http://localhost:5173
 ```
+
+**Email Setup Notes:**
+- For **Gmail**: You need to use an App Password (not your regular password)
+  1. Enable 2-factor authentication on your Google account
+  2. Go to https://myaccount.google.com/apppasswords
+  3. Generate an app password for "Mail"
+  4. Use that password as `SMTP_PASS`
+- For **other email providers**: Check their SMTP settings documentation
+- If SMTP is not configured, emails will be logged to console (development mode)
 
 ### Running the Server
 

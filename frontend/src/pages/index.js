@@ -1,5 +1,5 @@
 // Auth
-export { ResetPasswordPage } from './auth'
+export { ResetPasswordPage, ForgotPasswordPage } from './auth'
 
 // Dashboard
 export { Dashboard } from './dashboard'
