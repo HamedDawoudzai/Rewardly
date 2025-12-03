@@ -190,16 +190,14 @@ export const eventAPI = {
    */
   awardPoints: async (eventId, data) => {
     const body = {
+      type: 'event', // Backend requires type: 'event'
       amount: parseInt(data.amount),
     };
     
     // If utorid provided, award to specific user
+    // If no utorid, backend awards to all guests
     if (data.utorid) {
       body.utorid = data.utorid;
-    }
-    // If type is 'all', the backend should handle awarding to all attendees
-    if (data.type === 'all') {
-      body.type = 'all';
     }
 
     return apiFetch(`/events/${eventId}/transactions`, {

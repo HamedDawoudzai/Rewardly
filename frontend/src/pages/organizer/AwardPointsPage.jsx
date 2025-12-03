@@ -25,12 +25,16 @@ const AwardPointsPage = () => {
     setLoadingEvent(true)
     try {
       const response = await eventAPI.getById(id)
+      // Calculate numGuests from guests array if available (manager/organizer view)
+      // Otherwise use numGuests or guestCount from response
+      const guestCount = response.guests?.length ?? response.numGuests ?? response.guestCount ?? 0
       setEvent({
         id: response.id,
         name: response.name,
-        pointsRemain: response.pointsRemain || response.pointsPool || 0,
-        numGuests: response.numGuests || response.guestCount || 0,
-        pointsAwarded: response.pointsAwarded || 100
+        pointsRemain: response.pointsRemain ?? response.pointsPool ?? 0,
+        numGuests: guestCount,
+        pointsAwarded: response.pointsAwarded ?? 100,
+        guests: response.guests || []
       })
     } catch (err) {
       console.error('Failed to load event:', err)
