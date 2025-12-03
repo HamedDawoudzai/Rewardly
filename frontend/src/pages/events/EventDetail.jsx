@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, MapPin, Users, Clock, Coins, User, CheckCircle, Al
 import { useState, useEffect } from 'react'
 import { eventAPI } from '@/api/events'
 import { useAuth } from '@/context/AuthContext'
+import ManageAttendeesModal from '@/components/modals/ManageAttendeesModal'
 
 const EventDetail = () => {
   const { id } = useParams()
@@ -17,6 +18,7 @@ const EventDetail = () => {
   const [rsvpLoading, setRsvpLoading] = useState(false)
   const [isRsvped, setIsRsvped] = useState(false)
   const [isOrganizer, setIsOrganizer] = useState(false)
+  const [showAttendeesModal, setShowAttendeesModal] = useState(false)
 
   // Detect route context for proper navigation
   const isManagerRoute = location.pathname.startsWith('/manager/')
@@ -320,14 +322,28 @@ const EventDetail = () => {
                 <Link to={`/manager/events/${id}/edit`} className="block">
                   <Button variant="outline" className="w-full">Edit Event</Button>
                 </Link>
-                <Link to={`/manager/events/${id}/attendees`} className="block">
-                  <Button variant="outline" className="w-full">Manage Attendees</Button>
-                </Link>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowAttendeesModal(true)}
+                >
+                  Manage Attendees
+                </Button>
               </CardContent>
             </Card>
           )}
         </div>
       </div>
+
+      {/* Manage Attendees Modal */}
+      {showAttendeesModal && (
+        <ManageAttendeesModal
+          eventId={parseInt(id)}
+          eventName={event?.name || 'Event'}
+          onClose={() => setShowAttendeesModal(false)}
+          onUpdated={loadEvent}
+        />
+      )}
     </div>
   )
 }

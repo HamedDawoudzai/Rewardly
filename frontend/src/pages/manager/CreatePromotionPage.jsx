@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { PageHeader } from '@/components/layout'
 import { Button } from '@/components/ui/button'
 import { promotionAPI } from '@/api/promotions'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Percent, Gift } from 'lucide-react'
 
 const CreatePromotionPage = () => {
   const navigate = useNavigate()
@@ -12,6 +12,7 @@ const CreatePromotionPage = () => {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [bonusType, setBonusType] = useState('rate') // 'rate' or 'points'
 
   const [formData, setFormData] = useState({
     name: '',
@@ -34,6 +35,17 @@ const CreatePromotionPage = () => {
       try {
         setLoading(true)
         const data = await promotionAPI.getById(id)
+
+        // Determine which bonus type was set
+        const hasRate = data.rate && data.rate > 0
+        const hasPoints = data.points && data.points > 0
+        
+        // Default to rate, but if only points is set, use points
+        if (hasPoints && !hasRate) {
+          setBonusType('points')
+        } else {
+          setBonusType('rate')
+        }
 
         setFormData({
           name: data.name || '',
@@ -63,6 +75,17 @@ const CreatePromotionPage = () => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  // Handle bonus type toggle
+  const handleBonusTypeChange = (type) => {
+    setBonusType(type)
+    // Clear the other field when switching
+    if (type === 'rate') {
+      setFormData(prev => ({ ...prev, points: '' }))
+    } else {
+      setFormData(prev => ({ ...prev, rate: '' }))
+    }
+  }
+
   // ------------------------------------------------------------
   // SUBMIT HANDLER (CREATE OR EDIT)
   // ------------------------------------------------------------
@@ -71,7 +94,19 @@ const CreatePromotionPage = () => {
     setError('')
     setLoading(true)
 
-    // Build payload for backend
+    // Validate that at least one bonus value is set
+    if (bonusType === 'rate' && !formData.rate) {
+      setError('Please enter a points multiplier value')
+      setLoading(false)
+      return
+    }
+    if (bonusType === 'points' && !formData.points) {
+      setError('Please enter bonus points value')
+      setLoading(false)
+      return
+    }
+
+    // Build payload for backend - only include the selected bonus type
     const payload = {
       name: formData.name.trim(),
       description: formData.description.trim() || null,
@@ -79,8 +114,8 @@ const CreatePromotionPage = () => {
       startTime: formData.startDate,
       endTime: formData.endDate || null,
       minSpending: formData.minSpending !== '' ? Number(formData.minSpending) : null,
-      rate: formData.rate !== '' ? Number(formData.rate) : null,
-      points: formData.points !== '' ? Number(formData.points) : null
+      rate: bonusType === 'rate' && formData.rate !== '' ? Number(formData.rate) : null,
+      points: bonusType === 'points' && formData.points !== '' ? Number(formData.points) : null
     }
 
     try {
@@ -122,41 +157,49 @@ const CreatePromotionPage = () => {
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-6 bg-white p-6 rounded-xl shadow-sm max-w-2xl"
+        className="space-y-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm max-w-2xl"
       >
         {error && (
-          <div className="text-red-600 text-sm">{error}</div>
+          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
+            {error}
+          </div>
         )}
 
         {/* NAME */}
         <div>
-          <label className="block text-sm font-medium">Promotion Name *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Promotion Name <span className="text-red-500">*</span>
+          </label>
           <input
             type="text"
             value={formData.name}
             onChange={(e) => updateField('name', e.target.value)}
             required
-            className="mt-1 p-3 w-full border rounded"
+            className="mt-1 p-3 w-full border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
           />
         </div>
 
         {/* DESCRIPTION */}
         <div>
-          <label className="block text-sm font-medium">Description</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Description
+          </label>
           <textarea
             value={formData.description}
             onChange={(e) => updateField('description', e.target.value)}
-            className="mt-1 p-3 w-full border rounded h-24"
+            className="mt-1 p-3 w-full border border-gray-300 dark:border-gray-600 rounded-lg h-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rewardly-blue focus:border-transparent resize-none"
           />
         </div>
 
         {/* TYPE */}
         <div>
-          <label className="block text-sm font-medium">Promotion Type *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Promotion Type <span className="text-red-500">*</span>
+          </label>
           <select
             value={formData.type}
             onChange={(e) => updateField('type', e.target.value)}
-            className="mt-1 p-3 w-full border rounded"
+            className="mt-1 p-3 w-full border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
           >
             <option value="automatic">Automatic (applies to all eligible purchases)</option>
             <option value="one-time">One-time (each user can use once)</option>
@@ -166,61 +209,134 @@ const CreatePromotionPage = () => {
         {/* DATES */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium">Start Date *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Start Date <span className="text-red-500">*</span>
+            </label>
             <input
               type="date"
               value={formData.startDate}
               onChange={(e) => updateField('startDate', e.target.value)}
               required
-              className="mt-1 p-3 w-full border rounded"
+              className="mt-1 p-3 w-full border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">End Date</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              End Date
+            </label>
             <input
               type="date"
               value={formData.endDate}
               onChange={(e) => updateField('endDate', e.target.value)}
-              className="mt-1 p-3 w-full border rounded"
+              className="mt-1 p-3 w-full border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
             />
           </div>
         </div>
 
         {/* MIN SPENDING */}
         <div>
-          <label className="block text-sm font-medium">Minimum Spending ($)</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Minimum Spending ($)
+          </label>
           <input
             type="number"
             min="0"
+            step="0.01"
             value={formData.minSpending}
             onChange={(e) => updateField('minSpending', e.target.value)}
-            className="mt-1 p-3 w-full border rounded"
+            placeholder="0.00"
+            className="mt-1 p-3 w-full border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
           />
         </div>
 
-        {/* RATE & POINTS */}
+        {/* BONUS TYPE TOGGLE */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            Bonus Type <span className="text-red-500">*</span>
+          </label>
+          
+          <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => handleBonusTypeChange('rate')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                bonusType === 'rate'
+                  ? 'bg-rewardly-blue text-white'
+                  : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Percent className="h-4 w-4" />
+              Points Multiplier
+            </button>
+            <button
+              type="button"
+              onClick={() => handleBonusTypeChange('points')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-l border-gray-300 dark:border-gray-600 ${
+                bonusType === 'points'
+                  ? 'bg-rewardly-blue text-white'
+                  : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Gift className="h-4 w-4" />
+              Flat Bonus Points
+            </button>
+          </div>
+        </div>
+
+        {/* BONUS VALUE INPUT */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium">Points Multiplier</label>
-            <input
-              type="number"
-              min="0"
-              value={formData.rate}
-              onChange={(e) => updateField('rate', e.target.value)}
-              className="mt-1 p-3 w-full border rounded"
-            />
+          {/* Points Multiplier */}
+          <div className={bonusType !== 'rate' ? 'opacity-50' : ''}>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Points Multiplier
+              {bonusType === 'rate' && <span className="text-red-500"> *</span>}
+            </label>
+            <div className="relative mt-1">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.rate}
+                onChange={(e) => updateField('rate', e.target.value)}
+                disabled={bonusType !== 'rate'}
+                placeholder="e.g., 0.02 for 2%"
+                className={`p-3 w-full border rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent ${
+                  bonusType !== 'rate'
+                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 cursor-not-allowed text-gray-400 dark:text-gray-500'
+                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
+                }`}
+              />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Additional points per cent spent (e.g., 0.02 = 2% bonus)
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium">OR Bonus Points</label>
-            <input
-              type="number"
-              min="0"
-              value={formData.points}
-              onChange={(e) => updateField('points', e.target.value)}
-              className="mt-1 p-3 w-full border rounded"
-            />
+          {/* Bonus Points */}
+          <div className={bonusType !== 'points' ? 'opacity-50' : ''}>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Bonus Points
+              {bonusType === 'points' && <span className="text-red-500"> *</span>}
+            </label>
+            <div className="relative mt-1">
+              <input
+                type="number"
+                min="0"
+                value={formData.points}
+                onChange={(e) => updateField('points', e.target.value)}
+                disabled={bonusType !== 'points'}
+                placeholder="e.g., 500"
+                className={`p-3 w-full border rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent ${
+                  bonusType !== 'points'
+                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 cursor-not-allowed text-gray-400 dark:text-gray-500'
+                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
+                }`}
+              />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Flat bonus points added to transaction
+            </p>
           </div>
         </div>
 
