@@ -141,13 +141,13 @@ const EventsManagementPage = () => {
       render: (value) => new Date(value).toLocaleDateString()
     },
     {
-      key: 'attendance',
+      key: 'numGuests',
       label: 'Attendance',
-      render: (_, row) => (
+      render: (value, row) => (
         <div className="flex items-center gap-1">
           <Users className="h-4 w-4 text-gray-400" />
           <span>
-            {row.numGuests}{row.capacity ? ` / ${row.capacity}` : ''}
+            {value}{row.capacity ? ` / ${row.capacity}` : ''}
           </span>
         </div>
       )
