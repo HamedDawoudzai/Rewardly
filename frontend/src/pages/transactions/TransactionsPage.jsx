@@ -99,11 +99,11 @@ const TransactionsPage = () => {
 
   const getTypeStyles = (type) => {
     const styles = {
-      purchase: 'bg-green-100 text-green-700 border-green-200',
-      transfer: 'bg-blue-100 text-blue-700 border-blue-200',
-      redemption: 'bg-orange-100 text-orange-700 border-orange-200',
-      event: 'bg-purple-100 text-purple-700 border-purple-200',
-      adjustment: 'bg-gray-100 text-gray-700 border-gray-200',
+      purchase: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800',
+      transfer: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+      redemption: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+      event: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+      adjustment: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600',
     }
     return styles[type] || styles.adjustment
   }
@@ -114,7 +114,7 @@ const TransactionsPage = () => {
       label: 'ID',
       width: '80px',
       render: (value) => (
-        <span className="font-mono text-gray-500">#{value}</span>
+        <span className="font-mono text-gray-500 dark:text-white">#{value}</span>
       )
     },
     {
@@ -130,7 +130,7 @@ const TransactionsPage = () => {
       key: 'amount',
       label: 'Amount',
       render: (value) => (
-        <span className={`font-semibold ${value > 0 ? 'text-green-600' : value < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+        <span className={`font-semibold ${value > 0 ? 'text-green-600 dark:text-green-400' : value < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
           {value > 0 ? '+' : ''}{value} pts
         </span>
       )
@@ -138,13 +138,13 @@ const TransactionsPage = () => {
     {
       key: 'relatedId',
       label: 'Related To',
-      render: (value) => value || <span className="text-gray-400">—</span>
+      render: (value) => value ? <span className="dark:text-white">{value}</span> : <span className="text-gray-400">—</span>
     },
     {
       key: 'remark',
       label: 'Description',
       render: (value) => (
-        <span className="text-gray-600 truncate max-w-xs block">{value || '—'}</span>
+        <span className="text-gray-600 dark:text-gray-300 truncate max-w-xs block">{value || '—'}</span>
       )
     },
     {
@@ -156,7 +156,7 @@ const TransactionsPage = () => {
           const date = new Date(value)
           if (isNaN(date.getTime())) return <span className="text-gray-400 text-sm">—</span>
           return (
-            <span className="text-gray-500 text-sm">
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
               {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )
@@ -183,7 +183,7 @@ const TransactionsPage = () => {
   const filterPanel = (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
         <select
           value={filters.type}
           onChange={(e) => {
@@ -191,7 +191,7 @@ const TransactionsPage = () => {
             setCurrentPage(1)
             setSearchTerm('')
           }}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         >
           <option value="">All Types</option>
           <option value="purchase">Purchase</option>
@@ -202,7 +202,7 @@ const TransactionsPage = () => {
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Related ID</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Related ID</label>
         <input
           type="text"
           value={filters.relatedId}
@@ -211,11 +211,11 @@ const TransactionsPage = () => {
             setCurrentPage(1)
           }}
           placeholder="User ID or Event ID"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
         <div className="flex gap-2">
           <select
             value={filters.operator}
@@ -223,7 +223,7 @@ const TransactionsPage = () => {
               setFilters({ ...filters, operator: e.target.value })
               setCurrentPage(1)
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
             <option value="gte">≥</option>
             <option value="lte">≤</option>
@@ -236,7 +236,7 @@ const TransactionsPage = () => {
               setCurrentPage(1)
             }}
             placeholder="Amount"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm"
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
           />
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { usersAPI } from "@/api/users";
 import { Button } from "@/components/ui/button";
 import { getUser } from "@/utils/auth";
+import { Shield } from "lucide-react";
 
 // Role hierarchy - higher number = more privileges
 const ROLE_RANK = {
@@ -89,27 +90,30 @@ const ChangeRoleModal = ({ user, onClose, onUpdated }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4">Change User Role</h2>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
+        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
+          <Shield className="h-5 w-5" />
+          Change User Role
+        </h2>
 
         {cannotModifyTarget && (
-          <p className="text-amber-600 text-sm mb-3 bg-amber-50 p-2 rounded border border-amber-200">
+          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-700 dark:text-amber-400 text-sm mb-4">
             You cannot modify users with equal or higher privileges.
-          </p>
+          </div>
         )}
 
         {errorMsg && (
-          <p className="text-red-600 text-sm mb-3 bg-red-50 p-2 rounded border border-red-200">
+          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm mb-4">
             {errorMsg}
-          </p>
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Role</label>
+            <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Role</label>
             <select
-              className="w-full border border-gray-300 rounded px-3 py-2"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
               value={role}
               onChange={(e) => setRole(e.target.value)}
               disabled={saving || cannotModifyTarget}
@@ -122,7 +126,7 @@ const ChangeRoleModal = ({ user, onClose, onUpdated }) => {
             </select>
             
             {myRole === "manager" && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 As a manager, you can assign Regular or Cashier roles only.
               </p>
             )}

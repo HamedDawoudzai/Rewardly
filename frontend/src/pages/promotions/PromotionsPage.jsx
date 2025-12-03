@@ -97,7 +97,7 @@ const loadPromotions = async () => {
       {error && (
         <Card className="mb-4">
           <CardContent>
-            <p className="text-sm text-red-600">{error}</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           </CardContent>
         </Card>
       )}
@@ -122,16 +122,16 @@ const loadPromotions = async () => {
                     <div className="flex items-center gap-3">
                       <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
                         promo.type === 'automatic' 
-                          ? 'bg-purple-100' 
-                          : 'bg-green-100'
+                          ? 'bg-purple-100 dark:bg-purple-900/30' 
+                          : 'bg-green-100 dark:bg-green-900/30'
                       }`}>
                         {promo.rate ? (
                           <Percent className={`h-5 w-5 ${
-                            promo.type === 'automatic' ? 'text-purple-600' : 'text-green-600'
+                            promo.type === 'automatic' ? 'text-purple-600 dark:text-purple-400' : 'text-green-600 dark:text-green-400'
                           }`} />
                         ) : (
                           <Tag className={`h-5 w-5 ${
-                            promo.type === 'automatic' ? 'text-purple-600' : 'text-green-600'
+                            promo.type === 'automatic' ? 'text-purple-600 dark:text-purple-400' : 'text-green-600 dark:text-green-400'
                           }`} />
                         )}
                       </div>
@@ -139,8 +139,8 @@ const loadPromotions = async () => {
                         <CardTitle className="text-lg">{promo.name}</CardTitle>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                           isActive(promo) 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                         }`}>
                           {isActive(promo) ? 'Active' : 'Inactive'}
                         </span>
@@ -149,10 +149,10 @@ const loadPromotions = async () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600 mb-4">{promo.description}</p>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">{promo.description}</p>
                   
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-gray-500">
+                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                       <Calendar className="h-4 w-4" />
                       <span>
                         {new Date(promo.startTime).toLocaleDateString()} 
@@ -162,13 +162,13 @@ const loadPromotions = async () => {
                     </div>
                     
                     {promo.minSpending && (
-                      <div className="flex items-center gap-2 text-gray-500">
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                         <Tag className="h-4 w-4" />
                         <span>Min. spending: ${promo.minSpending}</span>
                       </div>
                     )}
                     
-                    <div className="flex items-center gap-2 font-medium text-rewardly-blue">
+                    <div className="flex items-center gap-2 font-medium text-rewardly-blue dark:text-rewardly-light-blue">
                       {promo.rate ? (
                         <span>{promo.rate}x points multiplier</span>
                       ) : (
