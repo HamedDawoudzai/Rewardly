@@ -26,6 +26,7 @@ import {
   UserDetailPage,
   CreateUserPage,
   AllTransactionsPage,
+  CreateAdjustmentPage,
   PromotionsManagementPage,
   CreatePromotionPage,
   EventsManagementPage,
@@ -111,6 +112,11 @@ function App() {
             <Route path="/manager/transactions/:id" element={
               <ProtectedRoute requiredRole="manager">
                 <TransactionDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/manager/adjustments/new" element={
+              <ProtectedRoute requiredRole="manager">
+                <CreateAdjustmentPage />
               </ProtectedRoute>
             } />
             <Route path="/manager/promotions" element={
