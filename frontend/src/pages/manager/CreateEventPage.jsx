@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, AlertCircle, Users, UserPlus, Trash2, CheckCircle } from 'lucide-react'
 import { eventAPI } from '@/api/events'
+import ConfirmModal from '@/components/modals/ConfirmModal'
 
 const CreateEventPage = () => {
   const navigate = useNavigate()
@@ -31,6 +32,10 @@ const CreateEventPage = () => {
   const [organizerLoading, setOrganizerLoading] = useState(false)
   const [organizerError, setOrganizerError] = useState('')
   const [organizerSuccess, setOrganizerSuccess] = useState('')
+
+  // Remove organizer confirmation modal state
+  const [removeOrganizerModalOpen, setRemoveOrganizerModalOpen] = useState(false)
+  const [organizerToRemove, setOrganizerToRemove] = useState(null)
 
   useEffect(() => {
     if (isEditMode) {
@@ -155,18 +160,32 @@ const CreateEventPage = () => {
     }
   }
 
-  const handleRemoveOrganizer = async (userId, utorid) => {
-    if (!confirm(`Remove ${utorid} as an organizer?`)) return
+  // Open remove organizer confirmation modal
+  const openRemoveOrganizerModal = (userId, utorid) => {
+    setOrganizerToRemove({ userId, utorid })
+    setRemoveOrganizerModalOpen(true)
+  }
+
+  // Close remove organizer confirmation modal
+  const closeRemoveOrganizerModal = () => {
+    setRemoveOrganizerModalOpen(false)
+    setOrganizerToRemove(null)
+  }
+
+  // Confirm remove organizer action
+  const confirmRemoveOrganizer = async () => {
+    if (!organizerToRemove) return
 
     setOrganizerLoading(true)
     setOrganizerError('')
     setOrganizerSuccess('')
 
     try {
-      await eventAPI.removeOrganizer(id, userId)
-      setOrganizerSuccess(`Removed ${utorid} as an organizer`)
+      await eventAPI.removeOrganizer(id, organizerToRemove.userId)
+      setOrganizerSuccess(`Removed ${organizerToRemove.utorid} as an organizer`)
       // Reload event to get updated organizer list
       await loadEvent()
+      closeRemoveOrganizerModal()
     } catch (err) {
       setOrganizerError(err.message || 'Failed to remove organizer')
     } finally {
@@ -432,7 +451,7 @@ const CreateEventPage = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleRemoveOrganizer(organizer.id, organizer.utorid)}
+                            onClick={() => openRemoveOrganizerModal(organizer.id, organizer.utorid)}
                             disabled={organizerLoading}
                             className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                             title="Remove organizer"
@@ -449,6 +468,18 @@ const CreateEventPage = () => {
           </div>
         )}
       </div>
+
+      {/* Remove Organizer Confirmation Modal */}
+      <ConfirmModal
+        isOpen={removeOrganizerModalOpen}
+        onClose={closeRemoveOrganizerModal}
+        onConfirm={confirmRemoveOrganizer}
+        title="Remove Organizer"
+        message={`Are you sure you want to remove ${organizerToRemove?.utorid} as an organizer?`}
+        confirmText="Remove"
+        variant="warning"
+        loading={organizerLoading}
+      />
     </div>
   )
 }
