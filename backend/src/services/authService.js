@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const { generateToken } = require('../utils/jwt');
 const userRepository = require('../repositories/userRepository');
+const emailService = require('./emailService');
 
 
 /**
@@ -123,9 +124,29 @@ async function requestPasswordReset(utorid, ip) {
   // Store reset token
   await userRepository.createPasswordResetToken(user.id, resetToken, expiresAt);
 
+  // Generate reset URL
+  const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
+
+  // Send password reset email
+  try {
+    await emailService.sendPasswordResetEmail(
+      user.email,
+      user.name,
+      resetUrl,
+      expiresAt
+    );
+  } catch (emailError) {
+    // Log error but don't fail the request
+    // The token is already created, so user can still reset if they have the link
+    console.error('Failed to send password reset email:', emailError);
+  }
+
+  // Don't return resetToken in response for security
+  // The token is sent via email only
   return {
-    expiresAt: expiresAt.toISOString(),
-    resetToken
+    expiresAt: expiresAt.toISOString()
+    // resetToken removed - sent via email instead
   };
 }
 

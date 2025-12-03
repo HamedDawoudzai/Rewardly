@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const userRepository = require('../repositories/userRepository');
 const roleRepository = require('../repositories/roleRepository');
+const emailService = require('./emailService');
 
 const SALT_ROUNDS = 10;
 
@@ -144,14 +145,35 @@ async function createUser(userData) {
     expiresAt
   );
 
+  // Generate activation URL
+  const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const activationUrl = `${baseUrl}/reset-password/${activationToken}`;
+
+  // Send activation email
+  try {
+    await emailService.sendActivationEmail(
+      email,
+      name,
+      activationUrl,
+      expiresAt
+    );
+  } catch (emailError) {
+    // Log error but don't fail user creation
+    // The user account is already created, so we continue
+    console.error('Failed to send activation email:', emailError);
+    // In production, you might want to queue this for retry or alert admins
+  }
+
+  // Return user data WITHOUT resetToken for security
+  // The activation link is sent via email, not returned in the API
   return {
     id: result.user.id,
     utorid: result.user.username,
     name: result.user.name,
     email: result.user.email,
     verified: result.user.isStudentVerified,
-    expiresAt: result.token.expiresAt.toISOString(),
-    resetToken: result.token.token
+    expiresAt: result.token.expiresAt.toISOString()
+    // resetToken removed - sent via email instead
   };
 }
 

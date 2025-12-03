@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { usersAPI } from "@/api/users";
 import { getUser } from "@/utils/auth";
-import { UserPlus, CheckCircle, Copy, Check, Key, AlertCircle } from "lucide-react";
+import { UserPlus, CheckCircle, Key, AlertCircle } from "lucide-react";
 
 const CreateUserPage = () => {
   const navigate = useNavigate();
@@ -39,7 +39,6 @@ const CreateUserPage = () => {
   const [errorMsg, setErrorMsg] = useState("");
   const [success, setSuccess] = useState(false);
   const [createdUser, setCreatedUser] = useState(null);
-  const [copied, setCopied] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -122,7 +121,6 @@ const CreateUserPage = () => {
     setSuccess(false);
     setCreatedUser(null);
     setErrorMsg("");
-    setCopied(false);
   };
 
   const getRoleStyles = (role) => {
@@ -135,29 +133,13 @@ const CreateUserPage = () => {
     return styles[role] || styles.regular;
   };
 
-  // Generate the activation URL
-  const getActivationUrl = () => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/reset-password/${createdUser?.resetToken}`;
-  };
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(getActivationUrl());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  };
-
   // Success view
   if (success && createdUser) {
     return (
       <div>
         <PageHeader
           title="User Created"
-          subtitle="Share the activation link with the new user"
+          subtitle="The activation email has been sent to the user"
           breadcrumbs={[
             { label: "Dashboard", href: "/dashboard" },
             { label: "Cashier" },
@@ -208,54 +190,28 @@ const CreateUserPage = () => {
             </div>
           </div>
 
-          {/* Activation Link Card - Important! */}
-          <div className="bg-amber-50 rounded-xl border-2 border-amber-300 p-6">
+          {/* Email Sent Confirmation */}
+          <div className="bg-blue-50 rounded-xl border-2 border-blue-300 p-6">
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Key className="h-5 w-5 text-amber-600" />
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Key className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-amber-900 text-lg">
-                  Account Activation Required
+                <h3 className="font-semibold text-blue-900 text-lg">
+                  Activation Email Sent
                 </h3>
-                <p className="text-amber-800 text-sm mt-1">
-                  The new user must set their password before they can log in.
-                  Share this activation link with them:
+                <p className="text-blue-800 text-sm mt-1">
+                  An activation email has been sent to{" "}
+                  <span className="font-medium">{createdUser.email || form.email}</span>.
+                  The user must check their email and follow the link to set their password.
                 </p>
               </div>
             </div>
 
-            {/* Activation Link */}
-            <div className="bg-white rounded-lg border border-amber-200 p-3 mb-4">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-sm font-mono text-gray-700 break-all">
-                  {getActivationUrl()}
-                </code>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleCopyLink}
-                  className="flex-shrink-0"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="h-4 w-4 mr-1 text-green-600" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-1" />
-                      Copy
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2 text-sm text-amber-800">
+            <div className="flex items-start gap-2 text-sm text-blue-800">
               <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <p>
-                This link expires on{" "}
+                The activation link expires on{" "}
                 <span className="font-medium">
                   {new Date(createdUser.expiresAt).toLocaleDateString("en-US", {
                     weekday: "long",
@@ -270,11 +226,11 @@ const CreateUserPage = () => {
           </div>
 
           {/* Next Steps Info */}
-          <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
-            <h4 className="font-medium text-blue-900 mb-2">What happens next?</h4>
-            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-              <li>Share the activation link above with the new user</li>
-              <li>They will be asked to create a password</li>
+          <div className="bg-green-50 rounded-lg border border-green-200 p-4">
+            <h4 className="font-medium text-green-900 mb-2">What happens next?</h4>
+            <ol className="text-sm text-green-800 space-y-1 list-decimal list-inside">
+              <li>The user will receive an email with an activation link</li>
+              <li>They will click the link and be asked to create a password</li>
               <li>After setting their password, they can log in with their UTORid</li>
             </ol>
           </div>

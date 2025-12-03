@@ -8,6 +8,7 @@ import LandingPage from '@/components/LandingPage'
 // Pages
 import {
   ResetPasswordPage,
+  ForgotPasswordPage,
   Dashboard,
   ProfilePage,
   TransactionsPage,
@@ -47,6 +48,7 @@ function App() {
           <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:resetToken" element={<ResetPasswordPage />} />
           
           {/* Protected Routes - Dashboard Layout */}
