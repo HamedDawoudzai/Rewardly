@@ -1,36 +1,28 @@
 'use strict';
 
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 /**
  * Email Service
- * Handles sending emails using Gmail SMTP
+ * Handles sending emails using Resend API
  * 
- * Gmail Setup:
- * 1. Enable 2-factor authentication on your Google account
- * 2. Go to https://myaccount.google.com/apppasswords
- * 3. Generate an app password for "Mail"
- * 4. Use that app password (NOT your regular password) below
+ * Setup:
+ * 1. Sign up at https://resend.com
+ * 2. Get your API key from the dashboard
+ * 3. Set RESEND_API_KEY in your environment variables
+ * 4. For production, verify your own domain in Resend dashboard
+ * 
+ * Note: The test domain (onboarding@resend.dev) only sends to your verified email
+ * To send to any email, you need to verify your own domain (free, takes ~5 minutes)
  */
 
-// Gmail SMTP Configuration
-const GMAIL_EMAIL = 'anujsarvate11@gmail.com';
-const GMAIL_APP_PASSWORD = 'cnmooaxugywqeqrg';
+// Initialize Resend with API key from environment
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-/**
- * Create and return a nodemailer transporter
- */
-function createTransporter() {
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: GMAIL_EMAIL,
-      pass: GMAIL_APP_PASSWORD,
-    },
-  });
-}
+// Email sender configuration
+// Use onboarding@resend.dev for testing, or your verified domain for production
+const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+const FROM_NAME = 'Rewardly';
 
 /**
  * Send activation email to new user
@@ -41,7 +33,6 @@ function createTransporter() {
  */
 async function sendActivationEmail(email, name, activationUrl, expiresAt) {
   const emailContent = {
-    to: email,
     subject: 'Welcome to Rewardly - Activate Your Account',
     html: `
       <!DOCTYPE html>
@@ -99,28 +90,30 @@ If you didn't request this account, please ignore this email.
     `
   };
 
-  const transporter = createTransporter();
-
   try {
     console.log('📧 Sending activation email to:', email);
-    console.log('   From:', GMAIL_EMAIL);
+    console.log('   From:', `${FROM_NAME} <${FROM_EMAIL}>`);
     
-    const info = await transporter.sendMail({
-      from: `"Rewardly" <${GMAIL_EMAIL}>`,
+    const { data, error } = await resend.emails.send({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
       to: email,
       subject: emailContent.subject,
-      text: emailContent.text,
-      html: emailContent.html
+      html: emailContent.html,
+      text: emailContent.text
     });
 
+    if (error) {
+      throw new Error(error.message);
+    }
+
     console.log('✅ Activation email sent successfully!');
-    console.log('   Message ID:', info.messageId);
+    console.log('   Email ID:', data.id);
     console.log('   To:', email);
     
     return { 
       success: true, 
       sent: true,
-      messageId: info.messageId
+      messageId: data.id
     };
   } catch (error) {
     console.error('❌ Failed to send activation email:', error);
@@ -145,7 +138,6 @@ If you didn't request this account, please ignore this email.
  */
 async function sendPasswordResetEmail(email, name, resetUrl, expiresAt) {
   const emailContent = {
-    to: email,
     subject: 'Reset Your Rewardly Password',
     html: `
       <!DOCTYPE html>
@@ -206,28 +198,30 @@ If you didn't request a password reset, please ignore this email. Your password 
     `
   };
 
-  const transporter = createTransporter();
-
   try {
     console.log('📧 Sending password reset email to:', email);
-    console.log('   From:', GMAIL_EMAIL);
+    console.log('   From:', `${FROM_NAME} <${FROM_EMAIL}>`);
     
-    const info = await transporter.sendMail({
-      from: `"Rewardly" <${GMAIL_EMAIL}>`,
+    const { data, error } = await resend.emails.send({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
       to: email,
       subject: emailContent.subject,
-      text: emailContent.text,
-      html: emailContent.html
+      html: emailContent.html,
+      text: emailContent.text
     });
 
+    if (error) {
+      throw new Error(error.message);
+    }
+
     console.log('✅ Password reset email sent successfully!');
-    console.log('   Message ID:', info.messageId);
+    console.log('   Email ID:', data.id);
     console.log('   To:', email);
     
     return { 
       success: true, 
       sent: true,
-      messageId: info.messageId
+      messageId: data.id
     };
   } catch (error) {
     console.error('❌ Failed to send password reset email:', error);
