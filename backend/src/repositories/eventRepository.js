@@ -59,15 +59,15 @@ async function findEventsWithFilters(filters = {}, page = 1, limit = 10, include
 
   if (filters.name) {
     where.name = {
-      contains: filters.name,
-      mode: 'insensitive'
+      contains: filters.name
+      // Note: mode: 'insensitive' not supported in SQLite
     };
   }
 
   if (filters.location) {
     where.location = {
-      contains: filters.location,
-      mode: 'insensitive'
+      contains: filters.location
+      // Note: mode: 'insensitive' not supported in SQLite
     };
   }
 

@@ -217,21 +217,30 @@ async function findTransactionsWithFilters(filters = {}, page = 1, limit = 10, a
   if (filters.createdBy) {
     where.createdBy = {
       username: {
-        contains: filters.createdBy,
-        mode: 'insensitive'
+        contains: filters.createdBy
+        // Note: mode: 'insensitive' not supported in SQLite
       }
     };
   }
 
   if (filters.name) {
-    where.account = {
-      user: {
-        name: {
-          contains: filters.name,
-          mode: 'insensitive'
+    // Check if it's a numeric ID search
+    const numericId = parseInt(filters.name);
+    if (!isNaN(numericId) && filters.name.trim() === String(numericId)) {
+      // Search by transaction ID
+      where.id = numericId;
+    } else {
+      // Search by user's name OR utorid (username)
+      where.account = {
+        user: {
+          OR: [
+            { name: { contains: filters.name } },
+            { username: { contains: filters.name } }
+          ]
+          // Note: mode: 'insensitive' not supported in SQLite
         }
-      }
-    };
+      };
+    }
   }
 
   if (filters.suspicious !== undefined) {

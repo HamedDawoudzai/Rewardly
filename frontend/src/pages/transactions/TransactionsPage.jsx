@@ -13,6 +13,7 @@ const TransactionsPage = () => {
     return isNaN(page) || page < 1 ? 1 : page
   })
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm)
   const [loading, setLoading] = useState(true)
   const [transactions, setTransactions] = useState([])
   const [totalPages, setTotalPages] = useState(1)
@@ -26,6 +27,14 @@ const TransactionsPage = () => {
   }))
 
   const itemsPerPage = 10
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   // Update URL when state changes
   useEffect(() => {
@@ -46,7 +55,7 @@ const TransactionsPage = () => {
 
   useEffect(() => {
     loadTransactions()
-  }, [currentPage, filters])
+  }, [currentPage, filters, debouncedSearch])
 
   const loadTransactions = async () => {
     setLoading(true)
