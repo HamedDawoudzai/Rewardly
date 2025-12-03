@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { 
   LayoutDashboard, 
   Receipt, 
@@ -20,6 +20,8 @@ import { useRoleView } from '@/context/RoleViewContext'
 
 const Sidebar = () => {
   const user = getUser()
+  const navigate = useNavigate()
+  const location = useLocation()
   const { isRoleView, exitRoleView } = useRoleView()
   
   // Determine user roles/capabilities
@@ -35,6 +37,18 @@ const Sidebar = () => {
         : 'text-gray-600 dark:text-gray-300 hover:bg-rewardly-light-blue dark:hover:bg-gray-700 hover:text-rewardly-blue dark:hover:text-white'
     }`
 
+  // Pages that require role view - should redirect to dashboard when exiting
+  const roleViewPages = ['/manager', '/cashier', '/admin']
+  const isOnRoleViewPage = roleViewPages.some(path => location.pathname.startsWith(path))
+
+  // Handle exiting role view with navigation to dashboard
+  const handleExitRoleView = () => {
+    exitRoleView()
+    if (isOnRoleViewPage) {
+      navigate('/dashboard')
+    }
+  }
+
   // Role View Sidebar - Shows only role-specific actions
   if (isRoleView) {
     return (
@@ -43,7 +57,7 @@ const Sidebar = () => {
           {/* Back to Regular View */}
           <div>
             <button
-              onClick={exitRoleView}
+              onClick={handleExitRoleView}
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium w-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
             >
               <ArrowLeft className="h-5 w-5" />

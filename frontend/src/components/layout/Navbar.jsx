@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { User, LogOut, ChevronDown, Shield, Briefcase, UserCog, Moon, Sun } from 'lucide-react'
 import { useState, useRef, useEffect, useContext } from 'react'
 import rewardlyLogo from '@/assets/rewardly_cropped.png'
@@ -11,6 +11,7 @@ const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const dropdownRef = useRef(null)
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useContext(AuthContext)
   const { isRoleView, toggleRoleView } = useRoleView()
   const { isDarkMode, toggleDarkMode } = useDarkMode()
@@ -37,6 +38,21 @@ const Navbar = () => {
   }
 
   const roleViewInfo = getRoleViewInfo()
+
+  // Pages that require role view - should redirect to dashboard when toggling off
+  const roleViewPages = ['/manager', '/cashier', '/admin']
+  const isOnRoleViewPage = roleViewPages.some(path => location.pathname.startsWith(path))
+
+  // Handle role view toggle with potential navigation
+  const handleRoleViewToggle = () => {
+    // If turning OFF role view while on a role-specific page, navigate to dashboard
+    if (isRoleView && isOnRoleViewPage) {
+      toggleRoleView()
+      navigate('/dashboard')
+    } else {
+      toggleRoleView()
+    }
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -76,7 +92,7 @@ const Navbar = () => {
           {/* Role View Toggle Button */}
           {roleViewInfo && (
             <button
-              onClick={toggleRoleView}
+              onClick={handleRoleViewToggle}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-all duration-200 ${
                 isRoleView 
                   ? roleViewInfo.color 
