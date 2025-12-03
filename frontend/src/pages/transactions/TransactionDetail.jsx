@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link, useLocation } from 'react-router-dom'
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, User, Calendar, Hash, FileText, Tag, AlertTriangle, ArrowRight } from 'lucide-react'
+import { ArrowLeft, User, Calendar, Hash, FileText, Tag, AlertTriangle, ArrowRight, Sliders, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { transactionAPI, adminTransactionAPI } from '@/api/transactions'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -11,9 +11,12 @@ const TransactionDetail = () => {
   const { id } = useParams()
   const { user } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [transaction, setTransaction] = useState(null)
   const [error, setError] = useState(null)
+  const [suspiciousLoading, setSuspiciousLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
   // Detect if we're on the manager route
   const isManagerRoute = location.pathname.startsWith('/manager/')
@@ -28,6 +31,39 @@ const TransactionDetail = () => {
   useEffect(() => {
     loadTransaction()
   }, [id])
+
+  // Show success message helper
+  const showSuccess = (message) => {
+    setSuccessMessage(message)
+    setTimeout(() => setSuccessMessage(''), 3000)
+  }
+
+  // Toggle suspicious status
+  const handleToggleSuspicious = async () => {
+    if (!transaction) return
+    setSuspiciousLoading(true)
+    try {
+      const newSuspicious = !transaction.suspicious
+      await adminTransactionAPI.toggleSuspicious(transaction.id, newSuspicious)
+      setTransaction({ ...transaction, suspicious: newSuspicious })
+      showSuccess(newSuspicious ? 'Transaction marked as suspicious' : 'Suspicious flag cleared')
+    } catch (err) {
+      console.error('Failed to toggle suspicious:', err)
+      setError(err.message || 'Failed to update suspicious status')
+    } finally {
+      setSuspiciousLoading(false)
+    }
+  }
+
+  // Navigate to create adjustment with pre-filled data
+  const handleCreateAdjustment = () => {
+    const params = new URLSearchParams()
+    params.set('relatedId', id)
+    if (transaction?.utorid) {
+      params.set('utorid', transaction.utorid)
+    }
+    navigate(`/manager/adjustments/new?${params.toString()}`)
+  }
 
   const loadTransaction = async () => {
     setLoading(true)
@@ -123,14 +159,54 @@ const TransactionDetail = () => {
         subtitle="View transaction details"
         breadcrumbs={breadcrumbs}
         actions={
-          <Link to={backLink}>
-            <Button variant="outline" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to {backLabel}
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {isManagerRoute && isManagerOrAbove && (
+              <>
+                <Button 
+                  variant="outline" 
+                  className="gap-2"
+                  onClick={handleCreateAdjustment}
+                >
+                  <Sliders className="h-4 w-4" />
+                  Create Adjustment
+                </Button>
+                <Button 
+                  variant={transaction?.suspicious ? "outline" : "destructive"}
+                  className={`gap-2 ${transaction?.suspicious ? 'border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20' : ''}`}
+                  onClick={handleToggleSuspicious}
+                  disabled={suspiciousLoading}
+                >
+                  {transaction?.suspicious ? (
+                    <>
+                      <ShieldCheck className="h-4 w-4" />
+                      Clear Suspicious
+                    </>
+                  ) : (
+                    <>
+                      <ShieldAlert className="h-4 w-4" />
+                      Mark Suspicious
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+            <Link to={backLink}>
+              <Button variant="outline" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to {backLabel}
+              </Button>
+            </Link>
+          </div>
         }
       />
+
+      {/* Success message */}
+      {successMessage && (
+        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-400 text-sm flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4" />
+          {successMessage}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Details */}
@@ -146,19 +222,19 @@ const TransactionDetail = () => {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Hash className="h-4 w-4" />
                   Transaction ID
                 </label>
-                <p className="text-gray-900 font-mono">#{transaction.id}</p>
+                <p className="text-gray-900 dark:text-white font-mono">#{transaction.id}</p>
               </div>
               
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   Date & Time
                 </label>
-                <p className="text-gray-900">
+                <p className="text-gray-900 dark:text-white">
                   {transaction.createdAt 
                     ? new Date(transaction.createdAt).toLocaleString() 
                     : 'Recently'}
@@ -169,54 +245,54 @@ const TransactionDetail = () => {
               {transaction.type === 'transfer' ? (
                 <>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                       <User className="h-4 w-4" />
                       From
                     </label>
-                    <p className="text-gray-900">{transaction.sender || 'Unknown'}</p>
+                    <p className="text-gray-900 dark:text-white">{transaction.sender || 'Unknown'}</p>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                       <User className="h-4 w-4" />
                       To
                     </label>
-                    <p className="text-gray-900">{transaction.recipient || 'Unknown'}</p>
+                    <p className="text-gray-900 dark:text-white">{transaction.recipient || 'Unknown'}</p>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                       <User className="h-4 w-4" />
                       Created By
                     </label>
-                    <p className="text-gray-900">{transaction.createdBy || 'System'}</p>
+                    <p className="text-gray-900 dark:text-white">{transaction.createdBy || 'System'}</p>
                   </div>
                   
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                       <User className="h-4 w-4" />
                       Related User/Entity
                     </label>
-                    <p className="text-gray-900">{transaction.relatedId || transaction.utorid || '—'}</p>
+                    <p className="text-gray-900 dark:text-white">{transaction.relatedId || transaction.utorid || '—'}</p>
                   </div>
                 </>
               )}
             </div>
 
-            <hr />
+            <hr className="dark:border-gray-700" />
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Remark
               </label>
-              <p className="text-gray-900">{transaction.remark || 'No remark provided'}</p>
+              <p className="text-gray-900 dark:text-white">{transaction.remark || 'No remark provided'}</p>
             </div>
 
             {transaction.promotionIds?.length > 0 && (
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Tag className="h-4 w-4" />
                   Applied Promotions
                 </label>
@@ -225,7 +301,7 @@ const TransactionDetail = () => {
                     <Link 
                       key={promoId}
                       to={`/promotions/${promoId}`}
-                      className="px-3 py-1 bg-rewardly-light-blue text-rewardly-blue rounded-full text-sm font-medium hover:bg-rewardly-blue hover:text-white transition-colors"
+                      className="px-3 py-1 bg-rewardly-light-blue dark:bg-rewardly-blue/20 text-rewardly-blue dark:text-rewardly-light-blue rounded-full text-sm font-medium hover:bg-rewardly-blue hover:text-white transition-colors"
                     >
                       Promotion #{promoId}
                     </Link>
@@ -235,11 +311,11 @@ const TransactionDetail = () => {
             )}
 
             {transaction.suspicious && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3">
                 <AlertTriangle className="h-5 w-5 text-red-500" />
                 <div>
-                  <p className="font-medium text-red-700">Suspicious Transaction</p>
-                  <p className="text-sm text-red-600">This transaction has been flagged for review.</p>
+                  <p className="font-medium text-red-700 dark:text-red-400">Suspicious Transaction</p>
+                  <p className="text-sm text-red-600 dark:text-red-300">This transaction has been flagged for review.</p>
                 </div>
               </div>
             )}
@@ -274,16 +350,16 @@ const TransactionDetail = () => {
           </CardHeader>
           <CardContent>
             <div className="text-center py-6">
-              <p className={`text-4xl font-bold ${pointsAmount > 0 ? 'text-green-600' : pointsAmount < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+              <p className={`text-4xl font-bold ${pointsAmount > 0 ? 'text-green-600 dark:text-green-400' : pointsAmount < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
                 {pointsAmount > 0 ? '+' : ''}{pointsAmount}
               </p>
-              <p className="text-gray-500 mt-1">Points</p>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">Points</p>
             </div>
             
             {/* Transfer details */}
             {transaction.type === 'transfer' && (
-              <div className="border-t pt-4 mt-4">
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+              <div className="border-t dark:border-gray-700 pt-4 mt-4">
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                   <span className="font-medium">{transaction.sender}</span>
                   <ArrowRight className="h-4 w-4" />
                   <span className="font-medium">{transaction.recipient}</span>
@@ -296,15 +372,15 @@ const TransactionDetail = () => {
 
             {/* Purchase details */}
             {transaction.spent && (
-              <div className="border-t pt-4 mt-4">
+              <div className="border-t dark:border-gray-700 pt-4 mt-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Amount Spent</span>
-                  <span className="font-medium">${parseFloat(transaction.spent).toFixed(2)}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Amount Spent</span>
+                  <span className="font-medium text-gray-900 dark:text-white">${parseFloat(transaction.spent).toFixed(2)}</span>
                 </div>
                 {pointsAmount > 0 && transaction.spent > 0 && (
                   <div className="flex justify-between text-sm mt-2">
-                    <span className="text-gray-500">Points Rate</span>
-                    <span className="font-medium">{(pointsAmount / transaction.spent).toFixed(1)}x</span>
+                    <span className="text-gray-500 dark:text-gray-400">Points Rate</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{(pointsAmount / transaction.spent).toFixed(1)}x</span>
                   </div>
                 )}
               </div>
@@ -312,17 +388,17 @@ const TransactionDetail = () => {
 
             {/* Redemption details */}
             {transaction.type === 'redemption' && (
-              <div className="border-t pt-4 mt-4">
+              <div className="border-t dark:border-gray-700 pt-4 mt-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Status</span>
-                  <span className={`font-medium ${transaction.redeemed || transaction.processedAt ? 'text-green-600' : 'text-orange-600'}`}>
+                  <span className="text-gray-500 dark:text-gray-400">Status</span>
+                  <span className={`font-medium ${transaction.redeemed || transaction.processedAt ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
                     {transaction.redeemed || transaction.processedAt ? 'Processed' : 'Pending'}
                   </span>
                 </div>
                 {transaction.processedBy && (
                   <div className="flex justify-between text-sm mt-2">
-                    <span className="text-gray-500">Processed By</span>
-                    <span className="font-medium">{transaction.processedBy}</span>
+                    <span className="text-gray-500 dark:text-gray-400">Processed By</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{transaction.processedBy}</span>
                   </div>
                 )}
               </div>
