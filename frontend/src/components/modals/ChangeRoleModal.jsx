@@ -2,7 +2,7 @@ import { useState } from "react";
 import { usersAPI } from "@/api/users";
 import { Button } from "@/components/ui/button";
 import { getUser } from "@/utils/auth";
-import { Shield } from "lucide-react";
+import { Shield, CheckCircle } from "lucide-react";
 
 // Role hierarchy - higher number = more privileges
 const ROLE_RANK = {
@@ -32,7 +32,7 @@ const getAssignableRoles = (requesterRole) => {
   return ["regular"];
 };
 
-const ChangeRoleModal = ({ user, onClose, onUpdated }) => {
+const ChangeRoleModal = ({ user, onClose, onUpdated, onSuccess }) => {
   const currentUser = getUser();
   const myRole = currentUser?.role || "regular";
   const myRank = ROLE_RANK[myRole] || 1;
@@ -41,12 +41,21 @@ const ChangeRoleModal = ({ user, onClose, onUpdated }) => {
   const [role, setRole] = useState(user.role);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   // Get roles this user is allowed to assign
   const assignableRoles = getAssignableRoles(myRole);
 
   // Managers cannot modify users of same or higher rank
   const cannotModifyTarget = myRole !== "superuser" && myRank <= targetRank;
+
+  // Role display names
+  const roleLabels = {
+    regular: "Regular",
+    cashier: "Cashier",
+    manager: "Manager",
+    superuser: "Superuser",
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,26 +76,27 @@ const ChangeRoleModal = ({ user, onClose, onUpdated }) => {
     setErrorMsg("");
 
     try {
+      const oldRole = user.role;
       await usersAPI.update(user.id, { role });
-      onUpdated(); // reload parent page
-      onClose();
+      
+      // Show success message briefly before closing
+      const message = `${user.name}'s role changed from ${roleLabels[oldRole]} to ${roleLabels[role]}.`;
+      setSuccessMsg(message);
+      
+      // Wait a moment to show success, then close and notify parent
+      setTimeout(() => {
+        onUpdated();
+        if (onSuccess) onSuccess(message);
+        onClose();
+      }, 1500);
     } catch (err) {
       console.error("Failed to update role:", err);
 
       // Show backend message if available
       const errorMsg = err?.message || err?.data?.error || err?.data?.message || "Failed to update role.";
       setErrorMsg(errorMsg);
-    } finally {
       setSaving(false);
     }
-  };
-
-  // Role display names
-  const roleLabels = {
-    regular: "Regular",
-    cashier: "Cashier",
-    manager: "Manager",
-    superuser: "Superuser",
   };
 
   return (
@@ -106,6 +116,13 @@ const ChangeRoleModal = ({ user, onClose, onUpdated }) => {
         {errorMsg && (
           <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm mb-4">
             {errorMsg}
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-600 dark:text-green-400 text-sm mb-4 flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 flex-shrink-0" />
+            {successMsg}
           </div>
         )}
 

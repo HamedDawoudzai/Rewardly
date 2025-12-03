@@ -30,6 +30,7 @@ const UserDetailPage = () => {
   const [saving, setSaving] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
@@ -48,8 +49,15 @@ const UserDetailPage = () => {
   const isSuperuser = myRole === "superuser";
 
   const showError = (msg) => {
+    setSuccessMessage(""); // Clear any success message
     setErrorMessage(msg);
     setTimeout(() => setErrorMessage(""), 4000);
+  };
+
+  const showSuccess = (msg) => {
+    setErrorMessage(""); // Clear any error message
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(""), 4000);
   };
 
   useEffect(() => {
@@ -98,13 +106,24 @@ const UserDetailPage = () => {
     }
   };
 
-  const verifyUser = () => {
+  const verifyUser = async () => {
     // Superusers can modify anyone
     if (!isSuperuser && myRank <= ROLE_RANK[user.role]) {
       showError("You cannot modify a user with higher or equal role.");
       return;
     }
-    updateUser({ verified: true });
+    
+    setSaving(true);
+    try {
+      await usersAPI.update(id, { verified: true });
+      await loadUser();
+      showSuccess(`${user.name} has been verified successfully.`);
+    } catch (err) {
+      console.error("Failed to verify user:", err);
+      showError(err.message || "Failed to verify user");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleActivation = async () => {
@@ -114,10 +133,12 @@ const UserDetailPage = () => {
       return;
     }
 
+    const newStatus = !user.isActivated;
     setSaving(true);
     try {
-      await usersAPI.update(id, { isActivated: !user.isActivated });
+      await usersAPI.update(id, { isActivated: newStatus });
       await loadUser();
+      showSuccess(`${user.name} has been ${newStatus ? 'activated' : 'deactivated'} successfully.`);
     } catch (err) {
       console.error("Failed to toggle activation:", err);
       showError("Failed to update activation status");
@@ -139,10 +160,15 @@ const UserDetailPage = () => {
       return;
     }
 
+    const newStatus = !user.suspicious;
     setSaving(true);
     try {
-      await usersAPI.update(id, { suspicious: !user.suspicious });
+      await usersAPI.update(id, { suspicious: newStatus });
       await loadUser();
+      showSuccess(newStatus 
+        ? `${user.name} has been marked as suspicious.` 
+        : `Suspicious flag has been removed from ${user.name}.`
+      );
     } catch (err) {
       console.error("Failed to toggle suspicious status:", err);
       showError("Failed to update suspicious status");
@@ -210,8 +236,16 @@ const UserDetailPage = () => {
       />
 
       {errorMessage && (
-        <div className="mb-4 p-3 rounded bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-sm">
+        <div className="mb-4 p-3 rounded bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-sm flex items-center gap-2">
+          <XCircle className="h-4 w-4 flex-shrink-0" />
           {errorMessage}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="mb-4 p-3 rounded bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-800 text-sm flex items-center gap-2">
+          <CheckCircle className="h-4 w-4 flex-shrink-0" />
+          {successMessage}
         </div>
       )}
 
