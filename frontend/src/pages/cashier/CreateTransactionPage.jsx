@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CreditCard, User, DollarSign, FileText, AlertCircle, CheckCircle, Tag, Check, Loader2 } from 'lucide-react'
+import { CreditCard, User, DollarSign, FileText, AlertCircle, CheckCircle, Tag, Check, Loader2, Zap } from 'lucide-react'
 import { adminTransactionAPI } from '@/api/transactions'
 import { promotionAPI } from '@/api/promotions'
 
@@ -14,12 +14,25 @@ const CreateTransactionPage = () => {
     remark: ''
   })
   const [selectedPromotions, setSelectedPromotions] = useState([])
-  const [promotions, setPromotions] = useState([])
+  const [allPromotions, setAllPromotions] = useState([])
   const [loadingPromotions, setLoadingPromotions] = useState(true)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
+
+  // Separate automatic and one-time promotions
+  const automaticPromotions = allPromotions.filter(p => p.type === 'automatic')
+  const oneTimePromotions = allPromotions.filter(p => p.type === 'onetime')
+
+  // Get automatic promotions that will be applied based on spend amount
+  const applicableAutomaticPromotions = automaticPromotions.filter(promo => {
+    const spent = parseFloat(formData.spent) || 0
+    if (promo.minSpending && spent < promo.minSpending) {
+      return false
+    }
+    return true
+  })
 
   // Fetch active promotions on component mount
   useEffect(() => {
@@ -36,7 +49,7 @@ const CreateTransactionPage = () => {
           }
           return true
         })
-        setPromotions(activePromotions)
+        setAllPromotions(activePromotions)
       } catch (err) {
         console.error('Failed to fetch promotions:', err)
       } finally {
@@ -64,19 +77,27 @@ const CreateTransactionPage = () => {
     let basePoints = Math.round(spent / 0.25)
     let bonusPoints = 0
 
-    // Add promotion bonuses
+    // Add automatic promotion bonuses (always applied if conditions met)
+    applicableAutomaticPromotions.forEach(promo => {
+      if (promo.rate) {
+        bonusPoints += Math.round(spent * 100 * promo.rate)
+      }
+      if (promo.points) {
+        bonusPoints += promo.points
+      }
+    })
+
+    // Add selected one-time promotion bonuses
     selectedPromotions.forEach(promoId => {
-      const promo = promotions.find(p => p.id === promoId)
+      const promo = oneTimePromotions.find(p => p.id === promoId)
       if (promo) {
         // Check minimum spending
         if (promo.minSpending && spent < promo.minSpending) {
           return
         }
-        // Rate multiplier (additional points per dollar)
         if (promo.rate) {
           bonusPoints += Math.round(spent * 100 * promo.rate)
         }
-        // Bonus points
         if (promo.points) {
           bonusPoints += promo.points
         }
@@ -102,11 +123,17 @@ const CreateTransactionPage = () => {
       return
     }
 
+    // Combine automatic promotions (that meet criteria) with selected one-time promotions
+    const allPromotionIds = [
+      ...applicableAutomaticPromotions.map(p => p.id),
+      ...selectedPromotions
+    ]
+
     try {
       const response = await adminTransactionAPI.createPurchase({
         utorid: formData.utorid,
         spent: formData.spent,
-        promotionIds: selectedPromotions,
+        promotionIds: allPromotionIds,
         remark: formData.remark || null
       })
       
@@ -114,7 +141,7 @@ const CreateTransactionPage = () => {
         points: response.earned || 0,
         spent: formData.spent,
         user: formData.utorid,
-        promotionsApplied: selectedPromotions.length
+        promotionsApplied: allPromotionIds.length
       })
       setSuccess(true)
     } catch (err) {
@@ -133,6 +160,8 @@ const CreateTransactionPage = () => {
   }
 
   const estimatedPoints = calculateEstimatedPoints()
+  const hasApplicableAutoPromotions = applicableAutomaticPromotions.length > 0
+  const hasPromotionBonuses = hasApplicableAutoPromotions || selectedPromotions.length > 0
 
   return (
     <div>
@@ -243,34 +272,26 @@ const CreateTransactionPage = () => {
                   {formData.spent && (
                     <p className="text-sm text-rewardly-blue dark:text-rewardly-light-blue mt-1">
                       Customer will earn ~{estimatedPoints} points
-                      {selectedPromotions.length > 0 && (
+                      {hasPromotionBonuses && (
                         <span className="text-green-600 dark:text-green-400"> (with promotions)</span>
                       )}
                     </p>
                   )}
                 </div>
 
-                {/* Promotions Section */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <Tag className="h-4 w-4 inline mr-1" />
-                    Apply Promotions <span className="text-gray-400 font-normal">(optional)</span>
-                  </label>
-                  
-                  {loadingPromotions ? (
-                    <div className="flex items-center justify-center py-4 text-gray-500 dark:text-gray-400">
-                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                      Loading promotions...
-                    </div>
-                  ) : promotions.length === 0 ? (
-                    <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
-                      No active promotions available
-                    </div>
-                  ) : (
-                    <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-2">
-                      {promotions.map(promo => {
+                {/* One-Time Promotions Selection (Optional) */}
+                {!loadingPromotions && oneTimePromotions.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Tag className="h-4 w-4 inline mr-1" />
+                      One-Time Promotions <span className="text-gray-400 font-normal">(optional)</span>
+                    </label>
+                    
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-2">
+                      {oneTimePromotions.map(promo => {
                         const isSelected = selectedPromotions.includes(promo.id)
-                        const meetsMinSpend = !promo.minSpending || (parseFloat(formData.spent) || 0) >= promo.minSpending
+                        const spent = parseFloat(formData.spent) || 0
+                        const meetsMinSpend = !promo.minSpending || spent >= promo.minSpending
                         
                         return (
                           <button
@@ -290,12 +311,8 @@ const CreateTransactionPage = () => {
                                   <span className="font-medium text-gray-900 dark:text-white">
                                     {promo.name}
                                   </span>
-                                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                    promo.type === 'automatic' 
-                                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                      : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                                  }`}>
-                                    {promo.type === 'automatic' ? 'Automatic' : 'One-time'}
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                                    One-time
                                   </span>
                                 </div>
                                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex flex-wrap gap-x-3 gap-y-1">
@@ -325,14 +342,96 @@ const CreateTransactionPage = () => {
                         )
                       })}
                     </div>
-                  )}
-                  
-                  {selectedPromotions.length > 0 && (
-                    <p className="text-sm text-green-600 dark:text-green-400 mt-2">
-                      {selectedPromotions.length} promotion{selectedPromotions.length > 1 ? 's' : ''} selected
-                    </p>
-                  )}
-                </div>
+                    
+                    {selectedPromotions.length > 0 && (
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-2">
+                        {selectedPromotions.length} one-time promotion{selectedPromotions.length > 1 ? 's' : ''} selected
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Auto-Applied Promotions Preview */}
+                {!loadingPromotions && automaticPromotions.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Zap className="h-4 w-4 inline mr-1" />
+                      Auto-Applied Promotions
+                    </label>
+                    
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-2">
+                      {automaticPromotions.map(promo => {
+                        const spent = parseFloat(formData.spent) || 0
+                        const meetsMinSpend = !promo.minSpending || spent >= promo.minSpending
+                        const willBeApplied = meetsMinSpend && spent > 0
+                        
+                        return (
+                          <div 
+                            key={promo.id}
+                            className={`flex items-center justify-between p-2 rounded-lg ${
+                              willBeApplied 
+                                ? 'bg-white dark:bg-gray-800' 
+                                : 'bg-gray-100 dark:bg-gray-800/50 opacity-60'
+                            }`}
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-medium ${
+                                  willBeApplied 
+                                    ? 'text-gray-900 dark:text-white' 
+                                    : 'text-gray-500 dark:text-gray-400'
+                                }`}>
+                                  {promo.name}
+                                </span>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400">
+                                  Auto
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 flex flex-wrap gap-x-3">
+                                {promo.rate > 0 && (
+                                  <span>+{(promo.rate * 100).toFixed(1)}% bonus</span>
+                                )}
+                                {promo.points > 0 && (
+                                  <span>+{promo.points} bonus pts</span>
+                                )}
+                                {promo.minSpending > 0 && (
+                                  <span className={!meetsMinSpend ? 'text-orange-600 dark:text-orange-400' : ''}>
+                                    Min ${promo.minSpending.toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0 ml-2">
+                              {willBeApplied ? (
+                                <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
+                                  <CheckCircle className="h-4 w-4" />
+                                  Applied
+                                </span>
+                              ) : (
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {!spent || spent <= 0 ? 'Enter amount' : 'Min not met'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    
+                    {hasApplicableAutoPromotions && (
+                      <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
+                        {applicableAutomaticPromotions.length} automatic promotion{applicableAutomaticPromotions.length > 1 ? 's' : ''} will be applied
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {loadingPromotions && (
+                  <div className="flex items-center justify-center py-4 text-gray-500 dark:text-gray-400">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    Loading promotions...
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
