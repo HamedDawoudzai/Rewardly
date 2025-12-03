@@ -84,15 +84,15 @@ const MyEventsPage = () => {
 
   const getStatusBadge = (event) => {
     if (!event.published) {
-      return <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Draft</span>
+      return <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">Draft</span>
     }
     if (isPast(event.endTime)) {
-      return <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Ended</span>
+      return <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Ended</span>
     }
     if (isUpcoming(event.startTime)) {
-      return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Upcoming</span>
+      return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">Upcoming</span>
     }
-    return <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">In Progress</span>
+    return <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">In Progress</span>
   }
 
   const columns = [
@@ -101,8 +101,8 @@ const MyEventsPage = () => {
       label: 'Event',
       render: (value, row) => (
         <div>
-          <div className="font-medium text-gray-900">{value}</div>
-          <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+          <div className="font-medium text-gray-900 dark:text-white">{value}</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
             <MapPin className="h-3 w-3" />
             {row.location}
           </div>
@@ -114,11 +114,11 @@ const MyEventsPage = () => {
       label: 'Date & Time',
       render: (value, row) => (
         <div className="text-sm">
-          <div className="flex items-center gap-1 text-gray-700">
+          <div className="flex items-center gap-1 text-gray-700 dark:text-white">
             <Calendar className="h-3 w-3" />
             {formatDateTime(value)}
           </div>
-          <div className="flex items-center gap-1 text-gray-500 mt-1">
+          <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 mt-1">
             <Clock className="h-3 w-3" />
             to {formatDateTime(row.endTime)}
           </div>
@@ -129,7 +129,7 @@ const MyEventsPage = () => {
       key: 'numGuests',
       label: 'Guests',
       render: (value, row) => (
-        <div className="flex items-center gap-1 text-gray-700">
+        <div className="flex items-center gap-1 text-gray-700 dark:text-white">
           <Users className="h-4 w-4" />
           <span>{value}{row.capacity ? ` / ${row.capacity}` : ''}</span>
         </div>
@@ -140,11 +140,11 @@ const MyEventsPage = () => {
       label: 'Points',
       render: (value, row) => (
         <div className="text-sm">
-          <div className="flex items-center gap-1 text-rewardly-blue font-medium">
+          <div className="flex items-center gap-1 text-rewardly-blue dark:text-rewardly-light-blue font-medium">
             <Coins className="h-4 w-4" />
             {value.toLocaleString()} remaining
           </div>
-          <div className="text-gray-500 text-xs mt-1">
+          <div className="text-gray-500 dark:text-gray-400 text-xs mt-1">
             {row.pointsAwarded.toLocaleString()} awarded
           </div>
         </div>

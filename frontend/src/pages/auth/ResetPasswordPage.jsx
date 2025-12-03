@@ -10,11 +10,13 @@ import {
 } from "@/components/ui/card";
 import { authAPI } from "@/api/api";
 import rewardlyLogo from "@/assets/rewardly_cropped.png";
-import { Key, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Key, CheckCircle, AlertCircle, Eye, EyeOff, Moon, Sun } from "lucide-react";
+import { useDarkMode } from "@/context/DarkModeContext";
 
 const ResetPasswordPage = () => {
   const { resetToken } = useParams();
   const navigate = useNavigate();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   const [formData, setFormData] = useState({
     utorid: "",
@@ -107,19 +109,32 @@ const ResetPasswordPage = () => {
   // Success View
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rewardly-light-blue via-white to-rewardly-light-blue flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-rewardly-light-blue via-white to-rewardly-light-blue dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 transition-colors">
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleDarkMode}
+          className="fixed top-4 right-4 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700"
+          aria-label="Toggle dark mode"
+        >
+          {isDarkMode ? (
+            <Sun className="h-5 w-5 text-yellow-500" />
+          ) : (
+            <Moon className="h-5 w-5 text-gray-600" />
+          )}
+        </button>
+
         <div className="w-full max-w-md">
           <Card className="shadow-xl">
             <CardContent className="pt-8 pb-8 text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
 
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Password Set Successfully!
               </h2>
 
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 Your account is now active. You can log in with your UTORid and
                 new password.
               </p>
@@ -140,31 +155,44 @@ const ResetPasswordPage = () => {
 
   // Form View
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rewardly-light-blue via-white to-rewardly-light-blue flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-rewardly-light-blue via-white to-rewardly-light-blue dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 transition-colors">
+      {/* Dark Mode Toggle */}
+      <button
+        onClick={toggleDarkMode}
+        className="fixed top-4 right-4 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700"
+        aria-label="Toggle dark mode"
+      >
+        {isDarkMode ? (
+          <Sun className="h-5 w-5 text-yellow-500" />
+        ) : (
+          <Moon className="h-5 w-5 text-gray-600" />
+        )}
+      </button>
+
       <div className="w-full max-w-md">
         <Card className="shadow-xl">
           <CardHeader className="space-y-4">
             {/* Logo and Title */}
             <div className="flex items-center justify-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-white shadow-lg flex items-center justify-center p-2 flex-shrink-0 overflow-hidden">
+              <div className="h-16 w-16 rounded-full bg-white dark:bg-gray-700 shadow-lg flex items-center justify-center p-2 flex-shrink-0 overflow-hidden">
                 <img
                   src={rewardlyLogo}
                   alt="Rewardly Logo"
                   className="h-full w-full object-cover"
                 />
               </div>
-              <h1 className="text-3xl font-bold font-heading text-rewardly-dark-navy">
+              <h1 className="text-3xl font-bold font-heading text-rewardly-dark-navy dark:text-white">
                 Rewardly
               </h1>
             </div>
 
             <div className="flex justify-center">
-              <div className="w-12 h-12 bg-rewardly-light-blue rounded-full flex items-center justify-center">
-                <Key className="h-6 w-6 text-rewardly-blue" />
+              <div className="w-12 h-12 bg-rewardly-light-blue dark:bg-rewardly-blue/20 rounded-full flex items-center justify-center">
+                <Key className="h-6 w-6 text-rewardly-blue dark:text-rewardly-light-blue" />
               </div>
             </div>
 
-            <CardTitle className="text-2xl text-center font-heading text-rewardly-dark-navy">
+            <CardTitle className="text-2xl text-center font-heading text-rewardly-dark-navy dark:text-white">
               Set Your Password
             </CardTitle>
             <CardDescription className="text-center text-base">
@@ -174,7 +202,7 @@ const ResetPasswordPage = () => {
 
           <CardContent>
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-start gap-2">
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -184,7 +212,7 @@ const ResetPasswordPage = () => {
               <div>
                 <label
                   htmlFor="utorid"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   UTORid
                 </label>
@@ -195,11 +223,11 @@ const ResetPasswordPage = () => {
                   required
                   value={formData.utorid}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent transition-all"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder="your_utorid"
                   disabled={loading}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Enter the UTORid that was used to create your account
                 </p>
               </div>
@@ -207,7 +235,7 @@ const ResetPasswordPage = () => {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   New Password
                 </label>
@@ -219,14 +247,14 @@ const ResetPasswordPage = () => {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent transition-all"
+                    className="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="••••••••"
                     disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -240,7 +268,7 @@ const ResetPasswordPage = () => {
               <div>
                 <label
                   htmlFor="confirmPassword"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   Confirm Password
                 </label>
@@ -252,14 +280,14 @@ const ResetPasswordPage = () => {
                     required
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent transition-all"
+                    className="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="••••••••"
                     disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -271,8 +299,8 @@ const ResetPasswordPage = () => {
               </div>
 
               {/* Password requirements */}
-              <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
-                <p className="font-medium mb-1">Password requirements:</p>
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-xs text-gray-600 dark:text-gray-400">
+                <p className="font-medium mb-1 text-gray-700 dark:text-gray-300">Password requirements:</p>
                 <ul className="space-y-0.5 list-disc list-inside">
                   <li>8-20 characters long</li>
                   <li>At least one uppercase letter</li>
@@ -295,7 +323,7 @@ const ResetPasswordPage = () => {
             <div className="mt-6 text-center">
               <Link
                 to="/"
-                className="text-sm text-rewardly-blue hover:text-rewardly-dark-navy transition-colors"
+                className="text-sm text-rewardly-blue dark:text-rewardly-light-blue hover:text-rewardly-dark-navy dark:hover:text-white transition-colors"
               >
                 ← Back to Login
               </Link>
@@ -308,4 +336,3 @@ const ResetPasswordPage = () => {
 };
 
 export default ResetPasswordPage;
-
