@@ -58,7 +58,7 @@ const USERS = [
 ];
 
 // ============================================================================
-// EVENT DEFINITIONS
+// EVENT DEFINITIONS (12 events for pagination - 2 pages at 10/page)
 // ============================================================================
 const EVENTS = [
   {
@@ -122,6 +122,56 @@ const EVENTS = [
     published: true
   },
   {
+    name: 'Alumni Networking Brunch',
+    description: 'Connect with successful alumni over brunch. Career advice and mentorship opportunities.',
+    location: 'Faculty Club Dining Hall',
+    daysFromNow: 18,
+    durationHours: 3,
+    capacity: 60,
+    pointsPool: 3500,
+    published: true
+  },
+  {
+    name: 'Wellness Wednesday: Yoga',
+    description: 'De-stress with a relaxing yoga session. All skill levels welcome!',
+    location: 'Athletics Center, Studio B',
+    daysFromNow: 5,
+    durationHours: 2,
+    capacity: 25,
+    pointsPool: 1000,
+    published: true
+  },
+  {
+    name: 'Game Night Tournament',
+    description: 'Board games, card games, and video game competitions. Prizes for winners!',
+    location: 'Recreation Center',
+    daysFromNow: 12,
+    durationHours: 4,
+    capacity: 50,
+    pointsPool: 2500,
+    published: true
+  },
+  {
+    name: 'Photography Workshop',
+    description: 'Learn photography basics and editing tips. Bring your camera or phone!',
+    location: 'Arts Building, Room 110',
+    daysFromNow: 25,
+    durationHours: 3,
+    capacity: 20,
+    pointsPool: 1500,
+    published: true
+  },
+  {
+    name: 'Cooking Class: Italian Night',
+    description: 'Learn to make authentic Italian pasta from scratch. Includes dinner!',
+    location: 'Community Kitchen',
+    daysFromNow: 16,
+    durationHours: 3,
+    capacity: 15,
+    pointsPool: 2000,
+    published: true
+  },
+  {
     name: 'Draft: Summer BBQ Planning',
     description: 'Planning meeting for summer BBQ event (internal only)',
     location: 'TBD',
@@ -134,7 +184,7 @@ const EVENTS = [
 ];
 
 // ============================================================================
-// PROMOTION DEFINITIONS  
+// PROMOTION DEFINITIONS (12 promotions for pagination - 2 pages at 10/page)
 // ============================================================================
 const PROMOTIONS = [
   {
@@ -194,6 +244,63 @@ const PROMOTIONS = [
     pointsPerCentMultiplier: 1.5,
     daysUntilStart: 20,
     daysUntilEnd: 40
+  },
+  {
+    name: 'Weekend Warrior',
+    description: 'Earn 1.5x points on weekend purchases!',
+    kind: 'automatic',
+    status: 'active',
+    pointsPerCentMultiplier: 1.5,
+    daysUntilStart: -3,
+    daysUntilEnd: 60
+  },
+  {
+    name: 'First Purchase Bonus',
+    description: 'Get 100 bonus points on your very first purchase!',
+    kind: 'onetime',
+    status: 'active',
+    pointsBonus: 100,
+    offerCode: 'FIRST100',
+    daysUntilStart: -60,
+    daysUntilEnd: 120
+  },
+  {
+    name: 'Referral Reward',
+    description: 'Referred by a friend? Use this code for 300 bonus points!',
+    kind: 'onetime',
+    status: 'active',
+    pointsBonus: 300,
+    offerCode: 'REFER300',
+    daysUntilStart: -30,
+    daysUntilEnd: 90
+  },
+  {
+    name: 'Birthday Bonus',
+    description: 'Happy Birthday! Enjoy 500 bonus points on us.',
+    kind: 'onetime',
+    status: 'active',
+    pointsBonus: 500,
+    offerCode: 'BDAY500',
+    daysUntilStart: -90,
+    daysUntilEnd: 180
+  },
+  {
+    name: 'Morning Rush',
+    description: 'Earn extra points on purchases before 10 AM!',
+    kind: 'automatic',
+    status: 'active',
+    pointsBonus: 50,
+    daysUntilStart: -5,
+    daysUntilEnd: 45
+  },
+  {
+    name: 'End of Season Sale',
+    description: 'Clear out season - 2.5x points on all purchases!',
+    kind: 'automatic',
+    status: 'inactive',
+    pointsPerCentMultiplier: 2.5,
+    daysUntilStart: 30,
+    daysUntilEnd: 45
   }
 ];
 
@@ -414,13 +521,14 @@ async function setupEventParticipants(events, users) {
   console.log('   ✓ Organizers assigned');
 
   // Add RSVPs - spread across events for pagination testing
+  // Note: status should be 'yes' for confirmed attendees
   const rsvpAssignments = [
     // Event 0: Spring Orientation - many RSVPs
     { event: events[0], user: users.user1, status: 'yes' },
     { event: events[0], user: users.user2, status: 'yes' },
     { event: events[0], user: users.user3, status: 'yes' },
     { event: events[0], user: users.user4, status: 'yes' },
-    { event: events[0], user: users.user5, status: 'no' },
+    { event: events[0], user: users.user5, status: 'yes' },
     { event: events[0], user: users.user6, status: 'yes' },
     
     // Event 1: Tech Workshop
@@ -451,6 +559,33 @@ async function setupEventParticipants(events, users) {
     // Event 5: Hackathon
     { event: events[5], user: users.user1, status: 'yes' },
     { event: events[5], user: users.user2, status: 'yes' },
+    { event: events[5], user: users.user3, status: 'yes' },
+    { event: events[5], user: users.user4, status: 'yes' },
+    
+    // Event 6: Alumni Networking
+    { event: events[6], user: users.user1, status: 'yes' },
+    { event: events[6], user: users.user2, status: 'yes' },
+    { event: events[6], user: users.user5, status: 'yes' },
+    
+    // Event 7: Wellness Wednesday
+    { event: events[7], user: users.user3, status: 'yes' },
+    { event: events[7], user: users.user4, status: 'yes' },
+    { event: events[7], user: users.user6, status: 'yes' },
+    
+    // Event 8: Game Night
+    { event: events[8], user: users.user1, status: 'yes' },
+    { event: events[8], user: users.user2, status: 'yes' },
+    { event: events[8], user: users.user4, status: 'yes' },
+    { event: events[8], user: users.user7, status: 'yes' },
+    
+    // Event 9: Photography Workshop
+    { event: events[9], user: users.user3, status: 'yes' },
+    { event: events[9], user: users.user5, status: 'yes' },
+    
+    // Event 10: Cooking Class
+    { event: events[10], user: users.user1, status: 'yes' },
+    { event: events[10], user: users.user6, status: 'yes' },
+    { event: events[10], user: users.user7, status: 'yes' },
   ];
 
   let rsvpCount = 0;
@@ -471,7 +606,7 @@ async function setupEventParticipants(events, users) {
 }
 
 async function createTransactions(users, events, promotions) {
-  console.log('💰 Creating transactions...');
+  console.log('💰 Creating transactions (with date distribution for analytics)...');
   
   const cashier1 = users.cashier1;
   const cashier2 = users.cashier2;
@@ -488,26 +623,45 @@ async function createTransactions(users, events, promotions) {
     return prisma.loyaltyAccount.findUnique({ where: { userId: user.id } });
   };
 
+  // Helper to create past date (for analytics data distribution)
+  const daysAgo = (days) => {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    date.setHours(Math.floor(Math.random() * 12) + 8); // Random hour 8am-8pm
+    return date;
+  };
+
   // =========================================================================
-  // PURCHASE TRANSACTIONS (15+)
+  // PURCHASE TRANSACTIONS (20+ with varied dates for analytics)
   // =========================================================================
   const purchases = [
-    { user: users.user1, cashier: cashier1, amount: 25.99, points: 104 },
-    { user: users.user1, cashier: cashier1, amount: 42.50, points: 170 },
-    { user: users.user1, cashier: cashier2, amount: 15.00, points: 60 },
-    { user: users.user2, cashier: cashier1, amount: 89.99, points: 360 },
-    { user: users.user2, cashier: cashier2, amount: 33.25, points: 133 },
-    { user: users.user3, cashier: cashier1, amount: 67.80, points: 271 },
-    { user: users.user3, cashier: cashier2, amount: 12.99, points: 52 },
-    { user: users.user4, cashier: cashier1, amount: 55.00, points: 220 },
-    { user: users.user4, cashier: cashier2, amount: 28.75, points: 115 },
-    { user: users.user5, cashier: cashier1, amount: 99.99, points: 400 },
-    { user: users.user5, cashier: cashier2, amount: 19.50, points: 78 },
-    { user: users.user6, cashier: cashier1, amount: 45.00, points: 180 },
-    { user: users.user6, cashier: cashier2, amount: 8.99, points: 36 },
-    { user: users.user7, cashier: cashier1, amount: 150.00, points: 600 },
-    { user: users.user7, cashier: cashier2, amount: 22.25, points: 89 },
-    { user: users.manager1, cashier: cashier1, amount: 35.50, points: 142 },
+    // Recent purchases (last week)
+    { user: users.user1, cashier: cashier1, amount: 25.99, points: 104, daysAgo: 1 },
+    { user: users.user1, cashier: cashier1, amount: 42.50, points: 170, daysAgo: 2 },
+    { user: users.user2, cashier: cashier1, amount: 89.99, points: 360, daysAgo: 3 },
+    { user: users.user3, cashier: cashier2, amount: 67.80, points: 271, daysAgo: 4 },
+    { user: users.user4, cashier: cashier1, amount: 55.00, points: 220, daysAgo: 5 },
+    { user: users.user5, cashier: cashier2, amount: 99.99, points: 400, daysAgo: 6 },
+    
+    // Last 2 weeks
+    { user: users.user1, cashier: cashier2, amount: 15.00, points: 60, daysAgo: 8 },
+    { user: users.user2, cashier: cashier2, amount: 33.25, points: 133, daysAgo: 10 },
+    { user: users.user3, cashier: cashier2, amount: 12.99, points: 52, daysAgo: 12 },
+    { user: users.user6, cashier: cashier1, amount: 45.00, points: 180, daysAgo: 13 },
+    
+    // Last month
+    { user: users.user4, cashier: cashier2, amount: 28.75, points: 115, daysAgo: 16 },
+    { user: users.user5, cashier: cashier2, amount: 19.50, points: 78, daysAgo: 18 },
+    { user: users.user6, cashier: cashier2, amount: 8.99, points: 36, daysAgo: 21 },
+    { user: users.user7, cashier: cashier1, amount: 150.00, points: 600, daysAgo: 23 },
+    { user: users.user7, cashier: cashier2, amount: 22.25, points: 89, daysAgo: 25 },
+    { user: users.manager1, cashier: cashier1, amount: 35.50, points: 142, daysAgo: 28 },
+    
+    // Older (30-60 days ago)
+    { user: users.user1, cashier: cashier1, amount: 78.00, points: 312, daysAgo: 32 },
+    { user: users.user2, cashier: cashier2, amount: 54.99, points: 220, daysAgo: 38 },
+    { user: users.user3, cashier: cashier1, amount: 125.00, points: 500, daysAgo: 45 },
+    { user: users.user4, cashier: cashier2, amount: 67.50, points: 270, daysAgo: 52 },
   ];
 
   for (const p of purchases) {
@@ -522,22 +676,23 @@ async function createTransactions(users, events, promotions) {
         totalCents: Math.round(p.amount * 100),
         pointsCalculated: p.points,
         pointsPosted: p.points,
-        notes: `Purchase of $${p.amount.toFixed(2)}`
+        notes: `Purchase of $${p.amount.toFixed(2)}`,
+        createdAt: daysAgo(p.daysAgo)
       }
     });
     purchaseCount++;
   }
-  console.log(`   ✓ ${purchaseCount} purchase transactions`);
+  console.log(`   ✓ ${purchaseCount} purchase transactions (spread over 60 days)`);
 
   // =========================================================================
-  // REDEMPTION TRANSACTIONS (5 - mix of posted and pending)
+  // REDEMPTION TRANSACTIONS (5 - mix of posted and pending, with dates)
   // =========================================================================
   const redemptions = [
-    { user: users.user1, points: 500, status: 'posted' },
-    { user: users.user1, points: 200, status: 'pending_verification' },
-    { user: users.user2, points: 300, status: 'posted' },
-    { user: users.user2, points: 150, status: 'pending_verification' },
-    { user: users.user3, points: 400, status: 'pending_verification' },
+    { user: users.user1, points: 500, status: 'posted', daysAgo: 7 },
+    { user: users.user1, points: 200, status: 'pending_verification', daysAgo: 1 },
+    { user: users.user2, points: 300, status: 'posted', daysAgo: 14 },
+    { user: users.user2, points: 150, status: 'pending_verification', daysAgo: 2 },
+    { user: users.user3, points: 400, status: 'pending_verification', daysAgo: 0 },
   ];
 
   for (const r of redemptions) {
@@ -550,7 +705,8 @@ async function createTransactions(users, events, promotions) {
         accountId: account.id,
         pointsCalculated: -r.points,
         pointsPosted: r.status === 'posted' ? -r.points : null,
-        notes: `Redemption request for ${r.points} points`
+        notes: `Redemption request for ${r.points} points`,
+        createdAt: daysAgo(r.daysAgo)
       }
     });
     redemptionCount++;
@@ -558,13 +714,13 @@ async function createTransactions(users, events, promotions) {
   console.log(`   ✓ ${redemptionCount} redemption transactions (3 pending)`);
 
   // =========================================================================
-  // ADJUSTMENT TRANSACTIONS (4)
+  // ADJUSTMENT TRANSACTIONS (4, with dates)
   // =========================================================================
   const adjustments = [
-    { user: users.user1, manager: manager1, points: 100, reason: 'Customer feedback bonus' },
-    { user: users.user2, manager: manager1, points: -50, reason: 'Points correction - duplicate credit' },
-    { user: users.user3, manager: manager1, points: 250, reason: 'Referral bonus - brought 5 friends' },
-    { user: users.user5, manager: manager1, points: 75, reason: 'Compensation for service issue' },
+    { user: users.user1, manager: manager1, points: 100, reason: 'Customer feedback bonus', daysAgo: 5 },
+    { user: users.user2, manager: manager1, points: -50, reason: 'Points correction - duplicate credit', daysAgo: 12 },
+    { user: users.user3, manager: manager1, points: 250, reason: 'Referral bonus - brought 5 friends', daysAgo: 20 },
+    { user: users.user5, manager: manager1, points: 75, reason: 'Compensation for service issue', daysAgo: 35 },
   ];
 
   for (const a of adjustments) {
@@ -578,7 +734,8 @@ async function createTransactions(users, events, promotions) {
         managerId: a.manager.id,
         pointsCalculated: a.points,
         pointsPosted: a.points,
-        notes: a.reason
+        notes: a.reason,
+        createdAt: daysAgo(a.daysAgo)
       }
     });
     adjustmentCount++;
@@ -586,13 +743,13 @@ async function createTransactions(users, events, promotions) {
   console.log(`   ✓ ${adjustmentCount} adjustment transactions`);
 
   // =========================================================================
-  // TRANSFER TRANSACTIONS (4)
+  // TRANSFER TRANSACTIONS (4, with dates)
   // =========================================================================
   const transfers = [
-    { from: users.user1, to: users.user2, points: 100 },
-    { from: users.user2, to: users.user3, points: 50 },
-    { from: users.user3, to: users.user4, points: 75 },
-    { from: users.user1, to: users.user6, points: 25 },
+    { from: users.user1, to: users.user2, points: 100, daysAgo: 3 },
+    { from: users.user2, to: users.user3, points: 50, daysAgo: 9 },
+    { from: users.user3, to: users.user4, points: 75, daysAgo: 15 },
+    { from: users.user1, to: users.user6, points: 25, daysAgo: 28 },
   ];
 
   for (const t of transfers) {
@@ -608,7 +765,8 @@ async function createTransactions(users, events, promotions) {
         transferToAccountId: toAccount.id,
         pointsCalculated: -t.points,
         pointsPosted: -t.points,
-        notes: `Transfer ${t.points} points to ${t.to.username}`
+        notes: `Transfer ${t.points} points to ${t.to.username}`,
+        createdAt: daysAgo(t.daysAgo)
       }
     });
     transferCount++;
@@ -616,16 +774,18 @@ async function createTransactions(users, events, promotions) {
   console.log(`   ✓ ${transferCount} transfer transactions`);
 
   // =========================================================================
-  // EVENT AWARD TRANSACTIONS (6) - Using past-dated event awards
+  // EVENT AWARD TRANSACTIONS (8) - With varied dates for analytics
   // =========================================================================
   // Note: We'll create event awards for users who RSVP'd 
   const eventAwards = [
-    { event: events[0], user: users.user1, points: 500 },
-    { event: events[0], user: users.user2, points: 500 },
-    { event: events[0], user: users.user3, points: 500 },
-    { event: events[1], user: users.user1, points: 300 },
-    { event: events[1], user: users.user2, points: 300 },
-    { event: events[3], user: users.user2, points: 150 },
+    { event: events[0], user: users.user1, points: 500, daysAgo: 14 },
+    { event: events[0], user: users.user2, points: 500, daysAgo: 14 },
+    { event: events[0], user: users.user3, points: 500, daysAgo: 14 },
+    { event: events[1], user: users.user1, points: 300, daysAgo: 21 },
+    { event: events[1], user: users.user2, points: 300, daysAgo: 21 },
+    { event: events[3], user: users.user2, points: 150, daysAgo: 7 },
+    { event: events[3], user: users.user4, points: 150, daysAgo: 7 },
+    { event: events[4], user: users.user1, points: 200, daysAgo: 10 },
   ];
 
   for (const ea of eventAwards) {
@@ -649,7 +809,7 @@ async function createTransactions(users, events, promotions) {
       }
     });
 
-    // Create corresponding transaction
+    // Create corresponding transaction with past date
     await prisma.transaction.create({
       data: {
         type: 'event',
@@ -659,7 +819,8 @@ async function createTransactions(users, events, promotions) {
         eventAwardId: award.id,
         pointsCalculated: ea.points,
         pointsPosted: ea.points,
-        notes: `Event award: ${ea.event.name}`
+        notes: `Event award: ${ea.event.name}`,
+        createdAt: daysAgo(ea.daysAgo)
       }
     });
     eventCount++;
@@ -668,7 +829,7 @@ async function createTransactions(users, events, promotions) {
 
   const total = purchaseCount + redemptionCount + adjustmentCount + transferCount + eventCount;
   console.log(`   ═══════════════════════════════`);
-  console.log(`   📊 Total: ${total} transactions`);
+  console.log(`   📊 Total: ${total} transactions (distributed over 60 days for analytics)`);
   console.log('');
 
   // Mark one user as suspicious for testing
@@ -709,11 +870,12 @@ function printSummary(users, events, promotions) {
   console.log('│ 📊 DATA SUMMARY                                               │');
   console.log('├────────────────────────────────────────────────────────────────┤');
   console.log('│ • 12 Users (1 superuser, 2 managers, 2 cashiers, 7 regular)   │');
-  console.log('│ • 35 Transactions (16 purchases, 5 redemptions, 4 adjustments,│');
-  console.log('│                    4 transfers, 6 event awards)               │');
-  console.log('│ • 7 Events (6 published, 1 draft)                             │');
-  console.log('│ • 6 Promotions (3 automatic, 2 one-time codes, 1 inactive)    │');
-  console.log('│ • 26 Event RSVPs across all events                            │');
+  console.log('│ • 41 Transactions (20 purchases, 5 redemptions, 4 adjustments,│');
+  console.log('│                    4 transfers, 8 event awards)               │');
+  console.log('│ • 12 Events (11 published, 1 draft) - 2 pages of pagination   │');
+  console.log('│ • 12 Promotions (6 automatic, 5 one-time codes) - 2 pages     │');
+  console.log('│ • 30+ Event RSVPs across all events                           │');
+  console.log('│ • Transactions spread over 60 days for analytics testing      │');
   console.log('└────────────────────────────────────────────────────────────────┘');
   console.log('');
   console.log('┌────────────────────────────────────────────────────────────────┐');
@@ -732,6 +894,9 @@ function printSummary(users, events, promotions) {
   console.log('├────────────────────────────────────────────────────────────────┤');
   console.log('│ • WELCOME500 - 500 bonus points (one-time, $10 min spend)     │');
   console.log('│ • LOYAL1000  - 1000 bonus points (one-time, no minimum)       │');
+  console.log('│ • FIRST100   - 100 bonus points (first purchase)              │');
+  console.log('│ • REFER300   - 300 bonus points (referral reward)             │');
+  console.log('│ • BDAY500    - 500 bonus points (birthday special)            │');
   console.log('└────────────────────────────────────────────────────────────────┘');
   console.log('');
 }
