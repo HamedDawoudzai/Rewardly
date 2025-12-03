@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { PageHeader } from '@/components/layout'
 import { DataTable } from '@/components/shared'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -16,6 +16,7 @@ const AllTransactionsPage = () => {
     return isNaN(page) || page < 1 ? 1 : page
   })
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm)
   const [loading, setLoading] = useState(true)
   const [transactions, setTransactions] = useState([])
   const [totalPages, setTotalPages] = useState(1)
@@ -43,6 +44,14 @@ const AllTransactionsPage = () => {
     }
   }
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   // Update URL when state changes
   useEffect(() => {
     const params = new URLSearchParams()
@@ -59,7 +68,7 @@ const AllTransactionsPage = () => {
 
   useEffect(() => {
     loadTransactions()
-  }, [currentPage, filters])
+  }, [currentPage, filters, debouncedSearch])
 
   const loadTransactions = async () => {
     setLoading(true)
@@ -74,6 +83,8 @@ const AllTransactionsPage = () => {
       if (filters.name) params.name = filters.name
       if (filters.createdBy) params.createdBy = filters.createdBy
       if (filters.suspicious !== '') params.suspicious = filters.suspicious
+      // Add search term (searches by name/utorid)
+      if (debouncedSearch) params.name = debouncedSearch
       
       const response = await adminTransactionAPI.getAll(params)
       
@@ -311,7 +322,7 @@ const AllTransactionsPage = () => {
         data={transactions}
         loading={loading}
         searchable={true}
-        searchPlaceholder="Search transactions..."
+        searchPlaceholder="Search by ID, name, or UTORid..."
         pagination={true}
         currentPage={currentPage}
         totalPages={totalPages}

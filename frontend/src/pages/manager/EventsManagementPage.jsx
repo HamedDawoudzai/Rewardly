@@ -16,6 +16,7 @@ const EventsManagementPage = () => {
     return isNaN(page) || page < 1 ? 1 : page
   })
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm)
   const [loading, setLoading] = useState(true)
   const [events, setEvents] = useState([])
   const [totalPages, setTotalPages] = useState(1)
@@ -30,6 +31,14 @@ const EventsManagementPage = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [eventToDelete, setEventToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   // Update URL when state changes
   useEffect(() => {
@@ -46,7 +55,7 @@ const EventsManagementPage = () => {
 
   useEffect(() => {
     loadEvents()
-  }, [currentPage, filters])
+  }, [currentPage, filters, debouncedSearch])
 
   const loadEvents = async () => {
     setLoading(true)
@@ -65,6 +74,8 @@ const EventsManagementPage = () => {
       } else if (filters.started === 'past') {
         params.ended = 'true'
       }
+      // Add search term (searches by event name)
+      if (debouncedSearch) params.name = debouncedSearch
       
       const response = await eventAPI.getAll(params)
       

@@ -21,6 +21,7 @@ const UsersManagementPage = () => {
     return isNaN(page) || page < 1 ? 1 : page
   });
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -54,6 +55,14 @@ const UsersManagementPage = () => {
     activated: searchParams.get('activated') || "",
   }));
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Update URL when state changes
   useEffect(() => {
     const params = new URLSearchParams();
@@ -69,7 +78,7 @@ const UsersManagementPage = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [currentPage, filters]);
+  }, [currentPage, filters, debouncedSearch]);
 
   // --------------------------------------------------------------------
   // Load Users (Real API)
@@ -85,6 +94,8 @@ const UsersManagementPage = () => {
         ...(filters.role ? { role: filters.role } : {}),
         ...(filters.verified ? { verified: filters.verified } : {}),
         ...(filters.activated ? { activated: filters.activated } : {}),
+        // Add search term (searches by name/utorid)
+        ...(debouncedSearch ? { name: debouncedSearch } : {}),
       };
 
       const response = await usersAPI.getAll(params);

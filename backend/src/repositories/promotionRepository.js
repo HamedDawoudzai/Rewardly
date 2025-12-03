@@ -50,8 +50,8 @@ async function findPromotionsWithFilters(filters = {}, page = 1, limit = 10, inc
 
   if (filters.name) {
     where.name = {
-      contains: filters.name,
-      mode: 'insensitive'
+      contains: filters.name
+      // Note: mode: 'insensitive' not supported in SQLite
     };
   }
 

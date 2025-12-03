@@ -16,10 +16,19 @@ const MyEventsPage = () => {
     return isNaN(page) || page < 1 ? 1 : page
   })
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm)
   const [loading, setLoading] = useState(true)
   const [events, setEvents] = useState([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   // Update URL when state changes
   useEffect(() => {
@@ -33,15 +42,19 @@ const MyEventsPage = () => {
 
   useEffect(() => {
     loadMyEvents()
-  }, [currentPage])
+  }, [currentPage, debouncedSearch])
 
   const loadMyEvents = async () => {
     setLoading(true)
     try {
-      const response = await eventAPI.getMyOrganizedEvents({
+      const params = {
         page: currentPage,
         limit: ITEMS_PER_PAGE,
-      })
+      }
+      // Add search term (searches by event name)
+      if (debouncedSearch) params.name = debouncedSearch
+      
+      const response = await eventAPI.getMyOrganizedEvents(params)
       
       const transformedEvents = (response.results || []).map(event => ({
         id: event.id,

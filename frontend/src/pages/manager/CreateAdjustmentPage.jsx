@@ -1,17 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Sliders, User, Hash, Link2, FileText, AlertCircle, CheckCircle, Plus, Minus } from 'lucide-react'
+import { Sliders, User, Hash, Link2, FileText, AlertCircle, CheckCircle, Plus, Minus, Info } from 'lucide-react'
 import { adminTransactionAPI } from '@/api/transactions'
 
 const CreateAdjustmentPage = () => {
+  const [searchParams] = useSearchParams()
+  
+  // Pre-fill from URL parameters
   const [formData, setFormData] = useState({
-    utorid: '',
+    utorid: searchParams.get('utorid') || '',
     amount: '',
-    relatedId: '',
+    relatedId: searchParams.get('relatedId') || '',
     remark: ''
   })
+  
+  // Track if this was pre-filled from a related transaction
+  const isRelatedTransaction = searchParams.get('relatedId') !== null
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -149,6 +156,13 @@ const CreateAdjustmentPage = () => {
                   <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
                     <AlertCircle className="h-4 w-4 flex-shrink-0" />
                     {error}
+                  </div>
+                )}
+
+                {isRelatedTransaction && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center gap-2 text-blue-700 dark:text-blue-400 text-sm">
+                    <Info className="h-4 w-4 flex-shrink-0" />
+                    Creating adjustment for transaction #{searchParams.get('relatedId')}
                   </div>
                 )}
 

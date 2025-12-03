@@ -17,6 +17,7 @@ const PromotionsManagementPage = () => {
     return isNaN(page) || page < 1 ? 1 : page
   })
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [promotions, setPromotions] = useState([])
@@ -41,6 +42,14 @@ const PromotionsManagementPage = () => {
     }
   }
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   // Update URL when state changes
   useEffect(() => {
     const params = new URLSearchParams()
@@ -53,17 +62,21 @@ const PromotionsManagementPage = () => {
 
   useEffect(() => {
     loadPromotions()
-  }, [currentPage])
+  }, [currentPage, debouncedSearch])
 
 const loadPromotions = async () => {
   setLoading(true)
   setError('')
 
   try {
-    const response = await promotionAPI.getAll({
+    const params = {
       page: currentPage,
       limit: ITEMS_PER_PAGE,
-    })
+    }
+    // Add search term (searches by promotion name)
+    if (debouncedSearch) params.name = debouncedSearch
+    
+    const response = await promotionAPI.getAll(params)
 
     // Backend returns: { count, results }
     const data = response.results || []
