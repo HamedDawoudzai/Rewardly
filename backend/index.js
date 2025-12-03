@@ -2,20 +2,20 @@
 'use strict';
 
 const port = (() => {
+    // Use PORT env var (Railway/production), command line arg, or default to 3000
+    if (process.env.PORT) {
+        return parseInt(process.env.PORT, 10);
+    }
+    
     const args = process.argv;
-
-    if (args.length !== 3) {
-        console.error("usage: node index.js port");
-        process.exit(1);
+    if (args.length >= 3) {
+        const num = parseInt(args[2], 10);
+        if (!isNaN(num)) {
+            return num;
+        }
     }
-
-    const num = parseInt(args[2], 10);
-    if (isNaN(num)) {
-        console.error("error: argument must be an integer.");
-        process.exit(1);
-    }
-
-    return num;
+    
+    return 3000; // Default port for local development
 })();
 
 const express = require("express");
