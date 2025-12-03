@@ -101,8 +101,8 @@ const MyEventsPage = () => {
       label: 'Event',
       render: (value, row) => (
         <div>
-          <div className="font-medium text-gray-900">{value}</div>
-          <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+          <div className="font-medium text-white">{value}</div>
+          <div className="text-sm text-white flex items-center gap-1 mt-1">
             <MapPin className="h-3 w-3" />
             {row.location}
           </div>
@@ -114,11 +114,11 @@ const MyEventsPage = () => {
       label: 'Date & Time',
       render: (value, row) => (
         <div className="text-sm">
-          <div className="flex items-center gap-1 text-gray-700">
+          <div className="flex items-center gap-1 text-white">
             <Calendar className="h-3 w-3" />
             {formatDateTime(value)}
           </div>
-          <div className="flex items-center gap-1 text-gray-500 mt-1">
+          <div className="flex items-center gap-1 text-white mt-1">
             <Clock className="h-3 w-3" />
             to {formatDateTime(row.endTime)}
           </div>
@@ -129,7 +129,7 @@ const MyEventsPage = () => {
       key: 'numGuests',
       label: 'Guests',
       render: (value, row) => (
-        <div className="flex items-center gap-1 text-gray-700">
+        <div className="flex items-center gap-1 text-white">
           <Users className="h-4 w-4" />
           <span>{value}{row.capacity ? ` / ${row.capacity}` : ''}</span>
         </div>
@@ -144,7 +144,7 @@ const MyEventsPage = () => {
             <Coins className="h-4 w-4" />
             {value.toLocaleString()} remaining
           </div>
-          <div className="text-gray-500 text-xs mt-1">
+          <div className="text-white text-xs mt-1">
             {row.pointsAwarded.toLocaleString()} awarded
           </div>
         </div>

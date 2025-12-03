@@ -120,7 +120,7 @@ const UserRolesPage = () => {
     {
       key: 'email',
       label: 'Email',
-      render: (v) => <span className="text-gray-500">{v}</span>
+      render: (v) => <span className="text-white">{v}</span>
     },
     {
       key: 'role',
