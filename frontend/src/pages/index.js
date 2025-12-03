@@ -34,6 +34,7 @@ export {
   UserDetailPage,
   CreateUserPage,
   AllTransactionsPage,
+  CreateAdjustmentPage,
   PromotionsManagementPage,
   CreatePromotionPage,
   EventsManagementPage,
