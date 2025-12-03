@@ -1,5 +1,6 @@
 // API Configuration
-const API_BASE_URL = import.meta.env.PROD ? 'http://localhost:3000' : '/api';
+// Use VITE_BACKEND_URL from .env if available, otherwise use defaults
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || (import.meta.env.PROD ? 'http://localhost:3000' : '/api');
 
 /**
  * Base fetch wrapper with improved structured errors
