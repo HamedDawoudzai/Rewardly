@@ -106,7 +106,7 @@ const ProfilePage = () => {
 
   if (loading || !user) {
     return (
-      <div className="p-10 text-center text-gray-500">Loading profile...</div>
+      <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading profile...</div>
     );
   }
 
@@ -130,17 +130,17 @@ const ProfilePage = () => {
                 <User className="h-12 w-12 text-white" />
               </div>
 
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 {user.name}
               </h2>
 
-              <p className="text-gray-500">@{user.utorid}</p>
+              <p className="text-gray-500 dark:text-gray-400">@{user.utorid}</p>
 
               <div className="mt-4 flex justify-center gap-2 flex-wrap">
                 {(user.roles || [user.role]).map((role) => (
                   <span
                     key={role}
-                    className="px-3 py-1 bg-rewardly-light-blue text-rewardly-blue rounded-full text-sm font-medium capitalize"
+                    className="px-3 py-1 bg-rewardly-light-blue dark:bg-rewardly-blue/20 text-rewardly-blue dark:text-rewardly-light-blue rounded-full text-sm font-medium capitalize"
                   >
                     {role}
                   </span>
@@ -168,44 +168,44 @@ const ProfilePage = () => {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Full Name
                 </label>
-                <p className="text-gray-900 font-medium">{user.name}</p>
+                <p className="text-gray-900 dark:text-white font-medium">{user.name}</p>
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Mail className="h-4 w-4" />
                   Email
                 </label>
-                <p className="text-gray-900 font-medium">{user.email}</p>
+                <p className="text-gray-900 dark:text-white font-medium">{user.email}</p>
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Shield className="h-4 w-4" />
                   UTORid
                 </label>
-                <p className="text-gray-900 font-medium">{user.utorid}</p>
+                <p className="text-gray-900 dark:text-white font-medium">{user.utorid}</p>
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   Member Since
                 </label>
-                <p className="text-gray-900 font-medium">
+                <p className="text-gray-900 dark:text-white font-medium">
                   {new Date(user.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </div>
 
-            <hr />
+            <hr className="border-gray-200 dark:border-gray-700" />
 
             <div>
-              <h3 className="text-lg font-semibold mb-4">Security</h3>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Security</h3>
 
               <Button
                 variant="outline"
@@ -234,21 +234,21 @@ const ProfilePage = () => {
 
       {/* CHANGE PASSWORD MODAL */}
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Key className="h-4 w-4" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+              <Key className="h-5 w-5" />
               Change Password
             </h3>
 
             <div className="space-y-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Current Password
                 </label>
                 <input
                   type="password"
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
                   value={passwordForm.currentPassword}
                   onChange={(e) =>
                     setPasswordForm((prev) => ({
@@ -260,12 +260,12 @@ const ProfilePage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   New Password
                 </label>
                 <input
                   type="password"
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
                   value={passwordForm.newPassword}
                   onChange={(e) =>
                     setPasswordForm((prev) => ({
@@ -274,18 +274,18 @@ const ProfilePage = () => {
                     }))
                   }
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Must be 8-20 characters with uppercase, lowercase, number, and special character
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Confirm New Password
                 </label>
                 <input
                   type="password"
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
                   value={passwordForm.confirmPassword}
                   onChange={(e) =>
                     setPasswordForm((prev) => ({
@@ -298,10 +298,14 @@ const ProfilePage = () => {
             </div>
 
             {passwordError && (
-              <p className="text-sm text-red-600 mb-2">{passwordError}</p>
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm mb-4">
+                {passwordError}
+              </div>
             )}
             {passwordSuccess && (
-              <p className="text-sm text-green-600 mb-2">{passwordSuccess}</p>
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-600 dark:text-green-400 text-sm mb-4">
+                {passwordSuccess}
+              </div>
             )}
 
             <div className="flex justify-end gap-3 mt-4">

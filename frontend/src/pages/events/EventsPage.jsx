@@ -150,25 +150,25 @@ const EventsPage = () => {
               
               return (
                 <Card key={event.id} className="hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className={`h-2 ${isUpcoming(event) ? 'bg-rewardly-blue' : 'bg-gray-300'}`} />
+                  <div className={`h-2 ${isUpcoming(event) ? 'bg-rewardly-blue' : 'bg-gray-300 dark:bg-gray-600'}`} />
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
                       <CardTitle className="text-lg">{event.name}</CardTitle>
                       <div className="flex gap-2">
                         {isUserOrganizer && (
-                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1">
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 flex items-center gap-1">
                             <Shield className="h-3 w-3" /> Organizer
                           </span>
                         )}
                         {!isUserOrganizer && isUserRsvped && (
-                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700 flex items-center gap-1">
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 flex items-center gap-1">
                             <CheckCircle className="h-3 w-3" /> RSVP'd
                           </span>
                         )}
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                           isUpcoming(event) 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                         }`}>
                           {isUpcoming(event) ? 'Upcoming' : 'Past'}
                         </span>
@@ -176,25 +176,25 @@ const EventsPage = () => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{event.description}</p>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">{event.description}</p>
                     
                     <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-gray-500">
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                         <Calendar className="h-4 w-4 flex-shrink-0" />
                         <span>{formatDate(startTime)}</span>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-gray-500">
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                         <Clock className="h-4 w-4 flex-shrink-0" />
                         <span>{formatTime(startTime)} - {formatTime(endTime)}</span>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-gray-500">
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                         <MapPin className="h-4 w-4 flex-shrink-0" />
                         <span>{event.location}</span>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-gray-500">
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                         <Users className="h-4 w-4 flex-shrink-0" />
                         <span>
                           {numGuests} attending
@@ -202,13 +202,13 @@ const EventsPage = () => {
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-2 font-medium text-rewardly-blue">
+                      <div className="flex items-center gap-2 font-medium text-rewardly-blue dark:text-rewardly-light-blue">
                         <Coins className="h-4 w-4 flex-shrink-0" />
                         <span>Earn up to {pointsAwarded} points</span>
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                       <Link to={`/events/${event.id}`}>
                         <Button variant="ghost" size="sm" className="gap-1 p-0">
                           View Details <ArrowRight className="h-4 w-4" />
