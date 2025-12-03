@@ -147,16 +147,16 @@ const UserDetailPage = () => {
 
   const getRoleStyles = (role) => {
     const styles = {
-      regular: "bg-gray-100 text-gray-700",
-      cashier: "bg-blue-100 text-blue-700",
-      manager: "bg-purple-100 text-purple-700",
-      superuser: "bg-red-100 text-red-700",
+      regular: "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300",
+      cashier: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
+      manager: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
+      superuser: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
     };
     return styles[role] || styles.regular;
   };
 
   if (loading || !user) {
-    return <div className="p-10 text-center text-gray-500">Loading user...</div>;
+    return <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading user...</div>;
   }
 
   const targetRank = ROLE_RANK[user.role] || 1;
@@ -204,7 +204,7 @@ const UserDetailPage = () => {
       />
 
       {errorMessage && (
-        <div className="mb-4 p-3 rounded bg-red-100 text-red-700 border border-red-300 text-sm">
+        <div className="mb-4 p-3 rounded bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-sm">
           {errorMessage}
         </div>
       )}
@@ -216,8 +216,8 @@ const UserDetailPage = () => {
               <div className="h-20 w-20 rounded-full bg-rewardly-blue flex items-center justify-center mx-auto mb-4">
                 <User className="h-10 w-10 text-white" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">{user.name}</h2>
-              <p className="text-gray-500">@{user.utorid}</p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{user.name}</h2>
+              <p className="text-gray-500 dark:text-gray-400">@{user.utorid}</p>
 
               <div className="mt-3">
                 <span
@@ -231,10 +231,10 @@ const UserDetailPage = () => {
             </div>
 
             <div className="mt-6 space-y-3">
-              <div className="flex items-center justify-between py-2 border-b">
-                <span className="text-gray-500">Verified</span>
+              <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                <span className="text-gray-500 dark:text-gray-400">Verified</span>
                 {user.verified ? (
-                  <span className="flex items-center gap-1 text-green-600">
+                  <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
                     <CheckCircle className="h-4 w-4" /> Yes
                   </span>
                 ) : (
@@ -244,10 +244,10 @@ const UserDetailPage = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-between py-2 border-b">
-                <span className="text-gray-500">Activated</span>
+              <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                <span className="text-gray-500 dark:text-gray-400">Activated</span>
                 {user.isActivated ? (
-                  <span className="flex items-center gap-1 text-green-600">
+                  <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
                     <CheckCircle className="h-4 w-4" /> Yes
                   </span>
                 ) : (
@@ -258,13 +258,13 @@ const UserDetailPage = () => {
               </div>
 
               <div className="flex items-center justify-between py-2">
-                <span className="text-gray-500">Suspicious</span>
+                <span className="text-gray-500 dark:text-gray-400">Suspicious</span>
                 {user.suspicious ? (
-                  <span className="flex items-center gap-1 text-red-600">
+                  <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
                     <XCircle className="h-4 w-4" /> Yes
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-green-600">
+                  <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
                     <CheckCircle className="h-4 w-4" /> No
                   </span>
                 )}
@@ -280,35 +280,35 @@ const UserDetailPage = () => {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Mail className="h-4 w-4" /> Email
                 </label>
-                <p className="text-gray-900">{user.email}</p>
+                <p className="text-gray-900 dark:text-white">{user.email}</p>
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Coins className="h-4 w-4" /> Points
                 </label>
-                <p className="text-2xl font-bold text-rewardly-blue">
+                <p className="text-2xl font-bold text-rewardly-blue dark:text-rewardly-light-blue">
                   {user.points?.toLocaleString() ?? 0}
                 </p>
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Calendar className="h-4 w-4" /> Member Since
                 </label>
-                <p className="text-gray-900">
+                <p className="text-gray-900 dark:text-white">
                   {new Date(user.createdAt).toLocaleDateString()}
                 </p>
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Calendar className="h-4 w-4" /> Last Login
                 </label>
-                <p className="text-gray-900">
+                <p className="text-gray-900 dark:text-white">
                   {user.lastLogin
                     ? new Date(user.lastLogin).toLocaleString()
                     : "N/A"}
@@ -316,10 +316,10 @@ const UserDetailPage = () => {
               </div>
             </div>
 
-            <hr />
+            <hr className="border-gray-200 dark:border-gray-700" />
 
             <div>
-              <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Quick Actions</h3>
 
               <div className="flex flex-wrap gap-3">
                 {!user.verified && (
@@ -358,7 +358,7 @@ const UserDetailPage = () => {
 
                 <Button
                   variant="outline"
-                  className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50"
+                  className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-900/20"
                   disabled={saving || cannotModify}
                   onClick={() => {
                     if (cannotModify) {
