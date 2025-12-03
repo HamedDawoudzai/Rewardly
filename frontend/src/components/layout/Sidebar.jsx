@@ -13,7 +13,8 @@ import {
   ClipboardList,
   ArrowLeft,
   UserPlus,
-  BarChart3
+  BarChart3,
+  Sliders
 } from 'lucide-react'
 import { getUser } from '@/utils/auth'
 import { useRoleView } from '@/context/RoleViewContext'
@@ -104,6 +105,10 @@ const Sidebar = () => {
                 <NavLink to="/manager/transactions" className={navLinkClass}>
                   <Receipt className="h-5 w-5" />
                   All Transactions
+                </NavLink>
+                <NavLink to="/manager/adjustments/new" className={navLinkClass}>
+                  <Sliders className="h-5 w-5" />
+                  Create Adjustment
                 </NavLink>
                 <NavLink to="/manager/promotions" className={navLinkClass}>
                   <Megaphone className="h-5 w-5" />
