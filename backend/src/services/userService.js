@@ -84,6 +84,7 @@ function mapUserToResponse(user, includeDetails = true) {
     result.createdAt = user.createdAt.toISOString();
     result.lastLogin = user.lastLogin ? user.lastLogin.toISOString() : null;
     result.verified = user.isStudentVerified;
+    result.suspicious = user.isSuspicious;
     result.avatarUrl = user.avatarUrl || null;
     result.isActivated = user.isActivated;
   }

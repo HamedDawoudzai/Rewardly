@@ -15,6 +15,7 @@ import {
   Edit2,
   UserCheck,
   UserX,
+  AlertTriangle,
 } from "lucide-react";
 import { usersAPI } from "@/api/users";
 import { getUser } from "@/utils/auth";
@@ -120,6 +121,25 @@ const UserDetailPage = () => {
     } catch (err) {
       console.error("Failed to toggle activation:", err);
       showError("Failed to update activation status");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleSuspicious = async () => {
+    // Superusers can modify anyone
+    if (!isSuperuser && myRank <= ROLE_RANK[user.role]) {
+      showError("You cannot modify a user with higher or equal role.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await usersAPI.update(id, { suspicious: !user.suspicious });
+      await loadUser();
+    } catch (err) {
+      console.error("Failed to toggle suspicious status:", err);
+      showError("Failed to update suspicious status");
     } finally {
       setSaving(false);
     }
@@ -350,6 +370,26 @@ const UserDetailPage = () => {
                 >
                   <UserX className="h-4 w-4" />
                   {user.isActivated ? "Deactivate" : "Activate"}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className={`gap-2 ${
+                    user.suspicious 
+                      ? "text-green-600 border-green-200 hover:bg-green-50" 
+                      : "text-red-600 border-red-200 hover:bg-red-50"
+                  }`}
+                  disabled={saving || cannotModify}
+                  onClick={() => {
+                    if (cannotModify) {
+                      showError("You cannot modify a user with higher or equal role.");
+                      return;
+                    }
+                    toggleSuspicious();
+                  }}
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  {user.suspicious ? "Clear Suspicious" : "Mark Suspicious"}
                 </Button>
               </div>
             </div>
