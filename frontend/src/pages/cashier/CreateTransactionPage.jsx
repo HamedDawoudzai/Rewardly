@@ -110,7 +110,7 @@ const CreateTransactionPage = () => {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     <User className="h-4 w-4 inline mr-1" />
                     Customer UTORid
                   </label>
@@ -122,13 +122,13 @@ const CreateTransactionPage = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
                     disabled={loading}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-white mt-1">
                     You can scan the customer's QR code or manually enter their UTORid
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Transaction Type
                   </label>
                   <select
@@ -142,12 +142,12 @@ const CreateTransactionPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     <DollarSign className="h-4 w-4 inline mr-1" />
                     Amount Spent
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white">
                       $
                     </span>
                     <input
@@ -169,7 +169,7 @@ const CreateTransactionPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     <FileText className="h-4 w-4 inline mr-1" />
                     Remark (optional)
                   </label>

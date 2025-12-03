@@ -103,7 +103,7 @@ const loadPromotions = async () => {
       key: 'name',
       label: 'Name',
       render: (value) => (
-        <span className="font-medium text-gray-900">{value}</span>
+        <span className="font-medium text-white">{value}</span>
       )
     },
     {

@@ -129,7 +129,7 @@ const AllTransactionsPage = () => {
       width: '80px',
       render: (value, row) => (
         <div className="flex items-center gap-2">
-          <span className="font-mono text-gray-500">#{value}</span>
+          <span className="font-mono text-white">#{value}</span>
           {row.suspicious && (
             <AlertTriangle className="h-4 w-4 text-red-500" title="Suspicious" />
           )}
@@ -167,14 +167,14 @@ const AllTransactionsPage = () => {
       key: 'createdBy',
       label: 'Created By',
       render: (value) => (
-        <span className="text-gray-500">@{value}</span>
+        <span className="text-white">@{value}</span>
       )
     },
     {
       key: 'createdAt',
       label: 'Date',
       render: (value) => (
-        <span className="text-gray-500 text-sm">
+        <span className="text-white text-sm">
           {new Date(value).toLocaleDateString()}
         </span>
       )

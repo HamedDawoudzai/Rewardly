@@ -105,7 +105,7 @@ const EventsManagementPage = () => {
       key: 'name',
       label: 'Event Name',
       render: (value) => (
-        <span className="font-medium text-gray-900">{value}</span>
+        <span className="font-medium text-white">{value}</span>
       )
     },
     {

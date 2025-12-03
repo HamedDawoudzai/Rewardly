@@ -149,14 +149,14 @@ const UsersManagementPage = () => {
       key: "utorid",
       label: "UTORid",
       render: (value) => (
-        <span className="font-mono font-medium text-gray-900">@{value}</span>
+        <span className="font-mono font-medium text-white">@{value}</span>
       ),
     },
     { key: "name", label: "Name" },
     {
       key: "email",
       label: "Email",
-      render: (value) => <span className="text-gray-500">{value}</span>,
+      render: (value) => <span className="text-white">{value}</span>,
     },
     {
       key: "role",

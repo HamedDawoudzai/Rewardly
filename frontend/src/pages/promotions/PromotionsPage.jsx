@@ -149,10 +149,10 @@ const loadPromotions = async () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600 mb-4">{promo.description}</p>
+                  <p className="text-white mb-4">{promo.description}</p>
                   
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-gray-500">
+                    <div className="flex items-center gap-2 text-white">
                       <Calendar className="h-4 w-4" />
                       <span>
                         {new Date(promo.startTime).toLocaleDateString()} 

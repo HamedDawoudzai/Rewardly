@@ -113,7 +113,7 @@ const ProcessRedemptionPage = () => {
           <CardContent>
             <form onSubmit={handleLookup} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white mb-2">
                   <Hash className="h-4 w-4 inline mr-1" />
                   Redemption ID
                 </label>
@@ -125,7 +125,7 @@ const ProcessRedemptionPage = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
                   disabled={loading || success || redemption}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-white mt-1">
                   Enter the transaction ID from the customer's redemption QR code
                 </p>
               </div>

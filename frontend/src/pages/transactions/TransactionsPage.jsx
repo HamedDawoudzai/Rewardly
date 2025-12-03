@@ -114,7 +114,7 @@ const TransactionsPage = () => {
       label: 'ID',
       width: '80px',
       render: (value) => (
-        <span className="font-mono text-gray-500">#{value}</span>
+        <span className="font-mono text-white">#{value}</span>
       )
     },
     {
@@ -144,7 +144,7 @@ const TransactionsPage = () => {
       key: 'remark',
       label: 'Description',
       render: (value) => (
-        <span className="text-gray-600 truncate max-w-xs block">{value || '—'}</span>
+        <span className="text-white truncate max-w-xs block">{value || '—'}</span>
       )
     },
     {
@@ -156,7 +156,7 @@ const TransactionsPage = () => {
           const date = new Date(value)
           if (isNaN(date.getTime())) return <span className="text-gray-400 text-sm">—</span>
           return (
-            <span className="text-gray-500 text-sm">
+            <span className="text-white text-sm">
               {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )

@@ -159,43 +159,43 @@ const EventDetail = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-              <p className="text-gray-600 whitespace-pre-line">{event.description || 'No description provided'}</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Description</h3>
+              <p className="text-white whitespace-pre-line">{event.description || 'No description provided'}</p>
             </div>
 
             <hr />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-white flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   Start Time
                 </label>
-                <p className="text-gray-900">{formatDateTime(startTime)}</p>
+                <p className="text-white">{formatDateTime(startTime)}</p>
               </div>
               
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-white flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   End Time
                 </label>
-                <p className="text-gray-900">{formatDateTime(endTime)}</p>
+                <p className="text-white">{formatDateTime(endTime)}</p>
               </div>
               
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-white flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
                   Location
                 </label>
-                <p className="text-gray-900">{event.location}</p>
+                <p className="text-white">{event.location}</p>
               </div>
               
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <label className="text-sm font-medium text-white flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Attendance
                 </label>
-                <p className="text-gray-900">
+                <p className="text-white">
                   {numGuests} attending
                   {event.capacity && ` / ${event.capacity} capacity`}
                 </p>
@@ -209,7 +209,7 @@ const EventDetail = () => {
 
             {organizers.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Organizers</h3>
+                <h3 className="text-lg font-semibold text-white mb-3">Organizers</h3>
                 <div className="flex flex-wrap gap-3">
                   {organizers.map((org) => (
                     <div key={org.id || org.utorid} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
@@ -240,19 +240,19 @@ const EventDetail = () => {
                   <Coins className="h-8 w-8 text-rewardly-blue" />
                 </div>
                 <p className="text-4xl font-bold text-rewardly-blue">+{pointsAwarded}</p>
-                <p className="text-gray-500 mt-1">Points for attending</p>
+                <p className="text-white mt-1">Points for attending</p>
               </div>
               
               {isManagerRoute && (
                 <div className="border-t pt-4 mt-4 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Points Remaining</span>
+                    <span className="text-white">Points Remaining</span>
                     <span className="font-medium">{pointsRemain.toLocaleString()}</span>
                   </div>
                 </div>
               )}
               
-              <div className="border-t pt-4 mt-4 text-sm text-gray-500 text-center">
+              <div className="border-t pt-4 mt-4 text-sm text-white text-center">
                 <p>Points will be awarded after the event</p>
               </div>
             </CardContent>
