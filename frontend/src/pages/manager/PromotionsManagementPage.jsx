@@ -6,6 +6,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Eye, Plus, Edit2, Trash2, CheckCircle, XCircle, Download } from 'lucide-react'
 import { promotionAPI } from '@/api/promotions'
 import { exportAPI } from '@/api/exports'
+import ConfirmModal from '@/components/modals/ConfirmModal'
 
 const ITEMS_PER_PAGE = 10
 
@@ -22,6 +23,11 @@ const PromotionsManagementPage = () => {
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
   const [exporting, setExporting] = useState(false)
+  
+  // Delete confirmation modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [promotionToDelete, setPromotionToDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const handleExport = async () => {
     setExporting(true)
@@ -79,15 +85,32 @@ const loadPromotions = async () => {
   }
 }
 
+  // Open delete confirmation modal
+  const openDeleteModal = (promotion) => {
+    setPromotionToDelete(promotion)
+    setDeleteModalOpen(true)
+  }
 
-  const handleDelete = async (promotionId) => {
-    if (!window.confirm('Are you sure you want to delete this promotion?')) return
+  // Close delete confirmation modal
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false)
+    setPromotionToDelete(null)
+  }
+
+  // Confirm delete action
+  const confirmDelete = async () => {
+    if (!promotionToDelete) return
+    
+    setDeleting(true)
     try {
-      await promotionAPI.delete(promotionId)
+      await promotionAPI.delete(promotionToDelete.id)
       await loadPromotions()
+      closeDeleteModal()
     } catch (err) {
       console.error('Failed to delete promotion:', err)
-      alert(err.message || 'Failed to delete promotion')
+      setError(err.message || 'Failed to delete promotion')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -171,7 +194,7 @@ const loadPromotions = async () => {
             variant="ghost" 
             size="sm" 
             className="text-red-500 hover:text-red-700"
-            onClick={() => handleDelete(row.id)}
+            onClick={() => openDeleteModal(row)}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -236,6 +259,18 @@ const loadPromotions = async () => {
           setSearchTerm(value)
           setCurrentPage(1)
         }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        title="Delete Promotion"
+        message={`Are you sure you want to delete "${promotionToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete Promotion"
+        variant="danger"
+        loading={deleting}
       />
     </div>
   )

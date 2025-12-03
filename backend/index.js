@@ -28,20 +28,22 @@ const app = express();
 // Security headers (XSS protection, clickjacking prevention, etc.)
 app.use(helmet());
 
-// Rate limiting - general API limit (100 requests per 15 min per IP)
+// Rate limiting - general API limit (10,000 requests per 15 min per IP)
+// High limit for normal use, only stops automated abuse
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100,
+    max: 10000,
     message: { error: 'Too many requests, please try again later' },
     standardHeaders: true,
     legacyHeaders: false
 });
 app.use(generalLimiter);
 
-// Strict rate limit for auth endpoints (prevent brute force attacks)
+// Rate limit for auth endpoints (prevent brute force attacks)
+// 500 attempts per 15 min - generous for demos but stops bots
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // 10 login attempts per 15 min
+    max: 500,
     message: { error: 'Too many login attempts, please try again later' },
     standardHeaders: true,
     legacyHeaders: false

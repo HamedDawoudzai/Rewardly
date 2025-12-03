@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Eye, Plus, Edit2, Trash2, Users, CheckCircle, XCircle } from 'lucide-react'
 import { eventAPI } from '@/api/events'
+import ConfirmModal from '@/components/modals/ConfirmModal'
 
 const ITEMS_PER_PAGE = 10
 
@@ -24,6 +25,11 @@ const EventsManagementPage = () => {
     started: searchParams.get('started') || '',
     ended: searchParams.get('ended') || ''
   }))
+
+  // Delete confirmation modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [eventToDelete, setEventToDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Update URL when state changes
   useEffect(() => {
@@ -88,15 +94,32 @@ const EventsManagementPage = () => {
     }
   }
 
-  const handleDelete = async (eventId) => {
-    if (!confirm('Are you sure you want to delete this event?')) return
+  // Open delete confirmation modal
+  const openDeleteModal = (event) => {
+    setEventToDelete(event)
+    setDeleteModalOpen(true)
+  }
+
+  // Close delete confirmation modal
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false)
+    setEventToDelete(null)
+  }
+
+  // Confirm delete action
+  const confirmDelete = async () => {
+    if (!eventToDelete) return
     
+    setDeleting(true)
     try {
-      await eventAPI.delete(eventId)
+      await eventAPI.delete(eventToDelete.id)
       await loadEvents()
+      closeDeleteModal()
     } catch (error) {
       console.error('Failed to delete event:', error)
       alert(error.message || 'Failed to delete event')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -118,13 +141,13 @@ const EventsManagementPage = () => {
       render: (value) => new Date(value).toLocaleDateString()
     },
     {
-      key: 'attendance',
+      key: 'numGuests',
       label: 'Attendance',
-      render: (_, row) => (
+      render: (value, row) => (
         <div className="flex items-center gap-1">
           <Users className="h-4 w-4 text-gray-400" />
           <span>
-            {row.numGuests}{row.capacity ? ` / ${row.capacity}` : ''}
+            {value}{row.capacity ? ` / ${row.capacity}` : ''}
           </span>
         </div>
       )
@@ -169,7 +192,7 @@ const EventsManagementPage = () => {
             variant="ghost" 
             size="sm" 
             className="text-red-500 hover:text-red-700"
-            onClick={() => handleDelete(row.id)}
+            onClick={() => openDeleteModal(row)}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -268,6 +291,18 @@ const EventsManagementPage = () => {
           setSearchTerm(value)
           setCurrentPage(1)
         }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        title="Delete Event"
+        message={`Are you sure you want to delete "${eventToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete Event"
+        variant="danger"
+        loading={deleting}
       />
     </div>
   )

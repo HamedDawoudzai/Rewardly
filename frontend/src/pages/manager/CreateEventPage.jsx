@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, AlertCircle, Users, UserPlus, Trash2, CheckCircle } from 'lucide-react'
 import { eventAPI } from '@/api/events'
+import ConfirmModal from '@/components/modals/ConfirmModal'
 
 const CreateEventPage = () => {
   const navigate = useNavigate()
@@ -31,6 +32,10 @@ const CreateEventPage = () => {
   const [organizerLoading, setOrganizerLoading] = useState(false)
   const [organizerError, setOrganizerError] = useState('')
   const [organizerSuccess, setOrganizerSuccess] = useState('')
+
+  // Remove organizer confirmation modal state
+  const [removeOrganizerModalOpen, setRemoveOrganizerModalOpen] = useState(false)
+  const [organizerToRemove, setOrganizerToRemove] = useState(null)
 
   useEffect(() => {
     if (isEditMode) {
@@ -155,18 +160,32 @@ const CreateEventPage = () => {
     }
   }
 
-  const handleRemoveOrganizer = async (userId, utorid) => {
-    if (!confirm(`Remove ${utorid} as an organizer?`)) return
+  // Open remove organizer confirmation modal
+  const openRemoveOrganizerModal = (userId, utorid) => {
+    setOrganizerToRemove({ userId, utorid })
+    setRemoveOrganizerModalOpen(true)
+  }
+
+  // Close remove organizer confirmation modal
+  const closeRemoveOrganizerModal = () => {
+    setRemoveOrganizerModalOpen(false)
+    setOrganizerToRemove(null)
+  }
+
+  // Confirm remove organizer action
+  const confirmRemoveOrganizer = async () => {
+    if (!organizerToRemove) return
 
     setOrganizerLoading(true)
     setOrganizerError('')
     setOrganizerSuccess('')
 
     try {
-      await eventAPI.removeOrganizer(id, userId)
-      setOrganizerSuccess(`Removed ${utorid} as an organizer`)
+      await eventAPI.removeOrganizer(id, organizerToRemove.userId)
+      setOrganizerSuccess(`Removed ${organizerToRemove.utorid} as an organizer`)
       // Reload event to get updated organizer list
       await loadEvent()
+      closeRemoveOrganizerModal()
     } catch (err) {
       setOrganizerError(err.message || 'Failed to remove organizer')
     } finally {
@@ -216,14 +235,14 @@ const CreateEventPage = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
                     <AlertCircle className="h-4 w-4" />
                     {error}
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Event Name *
                   </label>
                   <input
@@ -231,13 +250,13 @@ const CreateEventPage = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Tech Workshop: React Basics"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     disabled={loading}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Description
                   </label>
                   <textarea
@@ -245,13 +264,13 @@ const CreateEventPage = () => {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Describe the event..."
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     disabled={loading}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Location *
                   </label>
                   <input
@@ -259,33 +278,33 @@ const CreateEventPage = () => {
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     placeholder="e.g., Room BA1234, Bahen Centre"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     disabled={loading}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Start Time *
                     </label>
                     <input
                       type="datetime-local"
                       value={formData.startTime}
                       onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       disabled={loading}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       End Time *
                     </label>
                     <input
                       type="datetime-local"
                       value={formData.endTime}
                       onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       disabled={loading}
                     />
                   </div>
@@ -293,7 +312,7 @@ const CreateEventPage = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Capacity
                     </label>
                     <input
@@ -302,12 +321,12 @@ const CreateEventPage = () => {
                       value={formData.capacity}
                       onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
                       placeholder="Unlimited"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                       disabled={loading}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Points Pool *
                     </label>
                     <input
@@ -316,11 +335,11 @@ const CreateEventPage = () => {
                       value={formData.points}
                       onChange={(e) => setFormData({ ...formData, points: e.target.value })}
                       placeholder="e.g., 5000"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                       disabled={loading}
                       required
                     />
-                    <p className="text-xs text-gray-500 mt-1">Total points available to award to attendees</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total points available to award to attendees</p>
                   </div>
                 </div>
 
@@ -330,17 +349,17 @@ const CreateEventPage = () => {
                     id="published"
                     checked={formData.published}
                     onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
-                    className="h-4 w-4 text-rewardly-blue focus:ring-rewardly-blue border-gray-300 rounded"
+                    className="h-4 w-4 text-rewardly-blue focus:ring-rewardly-blue border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                     disabled={loading || (isEditMode && formData.published)}
                   />
                   <div>
-                    <label htmlFor="published" className="text-sm font-medium text-gray-700">
+                    <label htmlFor="published" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {isEditMode && formData.published 
                         ? 'Published (cannot be unpublished)' 
                         : 'Publish immediately (visible to all users)'}
                     </label>
                     {!formData.published && (
-                      <p className="text-xs text-gray-500">Once published, this cannot be undone</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Once published, this cannot be undone</p>
                     )}
                   </div>
                 </div>
@@ -372,14 +391,14 @@ const CreateEventPage = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {organizerError && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
                     <AlertCircle className="h-4 w-4 flex-shrink-0" />
                     {organizerError}
                   </div>
                 )}
 
                 {organizerSuccess && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700 text-sm">
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2 text-green-700 dark:text-green-400 text-sm">
                     <CheckCircle className="h-4 w-4 flex-shrink-0" />
                     {organizerSuccess}
                   </div>
@@ -387,7 +406,7 @@ const CreateEventPage = () => {
 
                 {/* Add Organizer Form */}
                 <form onSubmit={handleAddOrganizer} className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Add Organizer
                   </label>
                   <div className="flex gap-2">
@@ -396,7 +415,7 @@ const CreateEventPage = () => {
                       value={newOrganizerUtorid}
                       onChange={(e) => setNewOrganizerUtorid(e.target.value)}
                       placeholder="UTORid"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rewardly-blue focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                       disabled={organizerLoading}
                     />
                     <Button 
@@ -408,33 +427,33 @@ const CreateEventPage = () => {
                       <UserPlus className="h-4 w-4" />
                     </Button>
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Organizers can edit event details and manage guests
                   </p>
                 </form>
 
                 {/* Organizer List */}
-                <div className="border-t pt-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Current Organizers</h4>
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Current Organizers</h4>
                   {organizers.length === 0 ? (
-                    <p className="text-sm text-gray-500 italic">No organizers assigned</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">No organizers assigned</p>
                   ) : (
                     <div className="space-y-2">
                       {organizers.map((organizer) => (
                         <div 
                           key={organizer.id} 
-                          className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                          className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg"
                         >
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{organizer.name}</p>
-                            <p className="text-xs text-gray-500">@{organizer.utorid}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{organizer.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">@{organizer.utorid}</p>
                           </div>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleRemoveOrganizer(organizer.id, organizer.utorid)}
+                            onClick={() => openRemoveOrganizerModal(organizer.id, organizer.utorid)}
                             disabled={organizerLoading}
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                             title="Remove organizer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -449,6 +468,18 @@ const CreateEventPage = () => {
           </div>
         )}
       </div>
+
+      {/* Remove Organizer Confirmation Modal */}
+      <ConfirmModal
+        isOpen={removeOrganizerModalOpen}
+        onClose={closeRemoveOrganizerModal}
+        onConfirm={confirmRemoveOrganizer}
+        title="Remove Organizer"
+        message={`Are you sure you want to remove ${organizerToRemove?.utorid} as an organizer?`}
+        confirmText="Remove"
+        variant="warning"
+        loading={organizerLoading}
+      />
     </div>
   )
 }
