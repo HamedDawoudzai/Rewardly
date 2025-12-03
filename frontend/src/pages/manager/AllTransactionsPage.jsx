@@ -149,7 +149,7 @@ const AllTransactionsPage = () => {
       key: 'userId',
       label: 'User',
       render: (value) => (
-        <Link to={`/manager/users?search=${value}`} className="font-medium text-rewardly-blue hover:underline">
+        <Link to={`/manager/users?search=${value}`} className="font-medium text-rewardly-blue dark:text-rewardly-light-blue hover:underline">
           @{value}
         </Link>
       )

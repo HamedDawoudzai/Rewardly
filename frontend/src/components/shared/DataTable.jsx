@@ -220,7 +220,7 @@ const DataTable = ({
                   className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   {columns.map((column) => (
-                    <td key={column.key} className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                    <td key={column.key} className="px-6 py-4 text-sm text-gray-700 dark:text-white">
                       {column.render ? column.render(row[column.key], row) : row[column.key]}
                     </td>
                   ))}
