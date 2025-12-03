@@ -127,7 +127,13 @@ const UserDetailPage = () => {
   };
 
   const toggleSuspicious = async () => {
-    // Superusers can modify anyone
+    // Only cashiers can be marked as suspicious per spec
+    if (user.role !== 'cashier') {
+      showError("Only cashiers can be marked as suspicious.");
+      return;
+    }
+
+    // Superusers can modify anyone, others need higher rank
     if (!isSuperuser && myRank <= ROLE_RANK[user.role]) {
       showError("You cannot modify a user with higher or equal role.");
       return;
@@ -257,18 +263,21 @@ const UserDetailPage = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-between py-2">
-                <span className="text-gray-500 dark:text-gray-400">Suspicious</span>
-                {user.suspicious ? (
-                  <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                    <XCircle className="h-4 w-4" /> Yes
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                    <CheckCircle className="h-4 w-4" /> No
-                  </span>
-                )}
-              </div>
+              {/* Only show suspicious status for cashiers per spec */}
+              {user.role === 'cashier' && (
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-gray-500 dark:text-gray-400">Suspicious</span>
+                  {user.suspicious ? (
+                    <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                      <XCircle className="h-4 w-4" /> Yes
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                      <CheckCircle className="h-4 w-4" /> No
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -372,25 +381,28 @@ const UserDetailPage = () => {
                   {user.isActivated ? "Deactivate" : "Activate"}
                 </Button>
 
-                <Button
-                  variant="outline"
-                  className={`gap-2 ${
-                    user.suspicious 
-                      ? "text-green-600 border-green-200 hover:bg-green-50" 
-                      : "text-red-600 border-red-200 hover:bg-red-50"
-                  }`}
-                  disabled={saving || cannotModify}
-                  onClick={() => {
-                    if (cannotModify) {
-                      showError("You cannot modify a user with higher or equal role.");
-                      return;
-                    }
-                    toggleSuspicious();
-                  }}
-                >
-                  <AlertTriangle className="h-4 w-4" />
-                  {user.suspicious ? "Clear Suspicious" : "Mark Suspicious"}
-                </Button>
+                {/* Only managers can mark cashiers as suspicious per spec */}
+                {user.role === 'cashier' && (
+                  <Button
+                    variant="outline"
+                    className={`gap-2 ${
+                      user.suspicious 
+                        ? "text-green-600 border-green-200 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-900/20" 
+                        : "text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
+                    }`}
+                    disabled={saving || cannotModify}
+                    onClick={() => {
+                      if (cannotModify) {
+                        showError("You cannot modify a user with higher or equal role.");
+                        return;
+                      }
+                      toggleSuspicious();
+                    }}
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                    {user.suspicious ? "Clear Suspicious" : "Mark Suspicious"}
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
