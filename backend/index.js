@@ -20,12 +20,36 @@ const port = (() => {
 
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const { bootstrap } = require('./src/utils/bootstrap');
 const app = express();
 
+// Security headers (XSS protection, clickjacking prevention, etc.)
+app.use(helmet());
+
+// Rate limiting - general API limit (100 requests per 15 min per IP)
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100,
+    message: { error: 'Too many requests, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+app.use(generalLimiter);
+
+// Strict rate limit for auth endpoints (prevent brute force attacks)
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // 10 login attempts per 15 min
+    message: { error: 'Too many login attempts, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
 // Enable CORS for frontend
 app.use(cors({
-    origin: 'http://localhost:5173', // Vite dev server
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Vite dev server
     credentials: true
 }));
 
@@ -40,9 +64,9 @@ const promotionRoutes = require('./src/routes/promotionRoutes');
 const exportRoutes = require('./src/routes/exportRoutes');
 const analyticsRoutes = require('./src/routes/analyticsRoutes');
 
-// Mount routes
+// Mount routes (apply auth limiter to auth routes)
 app.use('/users', userRoutes);
-app.use('/auth', authRoutes);
+app.use('/auth', authLimiter, authRoutes);
 app.use('/transactions', transactionRoutes);
 app.use('/events', eventRoutes);
 app.use('/promotions', promotionRoutes);
@@ -63,6 +87,7 @@ app.get('/health', (req, res) => {
         // Start server after successful bootstrap
         const server = app.listen(port, () => {
             console.log(`Server running on port ${port}`);
+            console.log('Security: Helmet.js enabled, Rate limiting active');
         });
 
         server.on('error', (err) => {
