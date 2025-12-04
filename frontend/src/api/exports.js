@@ -5,7 +5,8 @@
 
 import { getToken } from '@/utils/auth';
 
-const API_BASE = '/api';
+// Use VITE_BACKEND_URL for production, /api for local dev (Vite proxy)
+const API_BASE = import.meta.env.VITE_BACKEND_URL || (import.meta.env.PROD ? '' : '/api');
 
 /**
  * Helper to trigger file download from authenticated endpoint
