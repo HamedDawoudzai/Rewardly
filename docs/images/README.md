@@ -4,8 +4,8 @@ Add the following screenshots to this folder:
 
 | Filename | Description |
 |----------|-------------|
-| `dashboard-preview.png` | Main dashboard view (hero image) |
 | `login.png` | Login page |
+| `dashboard.png` | Main dashboard (shows RBAC features) |
 | `user-management.png` | User management page |
 | `transactions.png` | Transactions list/detail page |
 | `analytics.png` | Analytics dashboard with charts |

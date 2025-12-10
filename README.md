@@ -19,10 +19,6 @@
 
 [Features](#-features) • [Tech Stack](#-tech-stack) • [Getting Started](#-getting-started) • [Architecture](#-architecture) • [API](#-api-documentation)
 
----
-
-<img src="docs/images/dashboard-preview.png" alt="Rewardly Dashboard" width="800"/>
-
 </div>
 
 ---
@@ -46,7 +42,7 @@ This project demonstrates production-ready patterns including:
 ### 🔐 Secure Authentication
 Clean, modern login experience with JWT-based authentication. Users receive activation emails and can reset passwords securely.
 
-<img src="docs/images/login.png" alt="Login Page" width="700"/>
+<img src="docs/images/login.png" alt="Login Page" width="850"/>
 
 **Authentication Flow:**
 - Email-based account activation
@@ -56,10 +52,23 @@ Clean, modern login experience with JWT-based authentication. Users receive acti
 
 ---
 
+### 📊 Role-Based Dashboard
+Each user role sees a customized dashboard tailored to their responsibilities. The system implements Role-Based Access Control (RBAC) to show relevant features and hide unauthorized actions.
+
+<img src="docs/images/dashboard.png" alt="Dashboard" width="850"/>
+
+**Dashboard by Role:**
+- **Superuser** - Full system access, user role management, all analytics
+- **Manager** - Transaction management, promotions, events, analytics, user oversight
+- **Cashier** - Create transactions, process redemptions, view assigned tasks
+- **Regular User** - View points balance, browse events, redeem rewards, transfer points
+
+---
+
 ### 👤 Multi-Role User Management
 Hierarchical role system with **Superuser**, **Manager**, **Cashier**, and **Regular User** roles. Each role has granular permissions enforced at both API and UI levels.
 
-<img src="docs/images/user-management.png" alt="User Management" width="700"/>
+<img src="docs/images/user-management.png" alt="User Management" width="850"/>
 
 **Capabilities:**
 - Create and manage user accounts
@@ -72,7 +81,7 @@ Hierarchical role system with **Superuser**, **Manager**, **Cashier**, and **Reg
 ### 💰 Transaction Processing
 Complete transaction lifecycle management supporting multiple transaction types with full audit trails.
 
-<img src="docs/images/transactions.png" alt="Transactions" width="700"/>
+<img src="docs/images/transactions.png" alt="Transactions" width="850"/>
 
 **Transaction Types:**
 - **Purchases** - Earn points on spending
@@ -86,7 +95,7 @@ Complete transaction lifecycle management supporting multiple transaction types 
 ### 📊 Spending Analytics Dashboard
 Real-time spending trend analysis using **linear regression** with configurable time periods and statistical insights.
 
-<img src="docs/images/analytics.png" alt="Analytics Dashboard" width="700"/>
+<img src="docs/images/analytics.png" alt="Analytics Dashboard" width="850"/>
 
 **Features:**
 - Daily, weekly, and monthly trend analysis
@@ -100,7 +109,7 @@ Real-time spending trend analysis using **linear regression** with configurable 
 ### 🎉 Event Management
 Create and manage events with RSVP tracking, capacity management, and automatic points distribution to attendees.
 
-<img src="docs/images/events.png" alt="Events" width="700"/>
+<img src="docs/images/events.png" alt="Events" width="850"/>
 
 **Capabilities:**
 - Event creation with capacity limits
@@ -114,7 +123,7 @@ Create and manage events with RSVP tracking, capacity management, and automatic 
 ### 🎁 Promotions Engine
 Flexible promotion system supporting both automatic multipliers and one-time promo codes.
 
-<img src="docs/images/promotions.png" alt="Promotions" width="700"/>
+<img src="docs/images/promotions.png" alt="Promotions" width="850"/>
 
 **Promotion Types:**
 - **Automatic** - Applied automatically based on rules (e.g., 2x points on Tuesdays)
@@ -125,7 +134,7 @@ Flexible promotion system supporting both automatic multipliers and one-time pro
 ### 🌙 Dark Mode
 Full dark mode support with automatic system preference detection and manual toggle.
 
-<img src="docs/images/dark-mode.png" alt="Dark Mode" width="700"/>
+<img src="docs/images/dark-mode.png" alt="Dark Mode" width="850"/>
 
 ---
 
