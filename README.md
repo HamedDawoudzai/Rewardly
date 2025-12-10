@@ -55,7 +55,7 @@ Clean, modern login experience with JWT-based authentication. Users receive acti
 ### 📊 Role-Based Dashboard
 Each user role sees a customized dashboard tailored to their responsibilities. The system implements Role-Based Access Control (RBAC) to show relevant features and hide unauthorized actions.
 
-<img src="docs/images/dashboard.png" alt="Dashboard" width="850"/>
+<img src="docs/images/dashboard-preview.png" alt="Dashboard" width="850"/>
 
 **Dashboard by Role:**
 - **Superuser** - Full system access, user role management, all analytics
