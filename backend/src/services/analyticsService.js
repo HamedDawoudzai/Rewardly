@@ -3,12 +3,21 @@
 /**
  * Analytics Service
  * Provides spending trend analysis using linear regression
+ * 
+ * Redis caching enabled for expensive analytics queries
  */
 
 const { PrismaClient } = require('@prisma/client');
 const ss = require('simple-statistics');
+const { cacheGet, cacheSet, isRedisAvailable } = require('../utils/redis');
 
 const prisma = new PrismaClient();
+
+// Cache TTLs (in seconds)
+const CACHE_TTL = {
+  SPENDING_TRENDS: 600,    // 10 minutes - trends don't change frequently
+  TRANSACTION_STATS: 300   // 5 minutes - stats change more often
+};
 
 /**
  * Get spending trends using linear regression
@@ -25,6 +34,13 @@ async function getSpendingTrends(period = 'weekly', lookback = null) {
     } else {
       lookback = 3;   // 3 months
     }
+  }
+
+  // Check Redis cache first
+  const cacheKey = `analytics:spending:${period}:${lookback}`;
+  const cached = await cacheGet(cacheKey);
+  if (cached) {
+    return cached;
   }
 
   // 1. Calculate the date range ending at current date
@@ -53,7 +69,7 @@ async function getSpendingTrends(period = 'weekly', lookback = null) {
   // 3. If not enough data, return early with basic stats
   if (aggregated.length < 3) {
     const total = aggregated.reduce((sum, d) => sum + d.spending, 0);
-    return {
+    const earlyResult = {
       summary: {
         totalSpending: Math.round(total * 100) / 100,
         averagePerPeriod: aggregated.length > 0 ? Math.round((total / aggregated.length) * 100) / 100 : 0,
@@ -73,9 +89,15 @@ async function getSpendingTrends(period = 'weekly', lookback = null) {
           start: startDate.toISOString().split('T')[0],
           end: now.toISOString().split('T')[0]
         },
-        periodsAnalyzed: aggregated.length
+        periodsAnalyzed: aggregated.length,
+        cached: false
       }
     };
+    
+    // Cache even incomplete results (shorter TTL)
+    await cacheSet(cacheKey, { ...earlyResult, meta: { ...earlyResult.meta, cached: true } }, CACHE_TTL.SPENDING_TRENDS / 2);
+    
+    return earlyResult;
   }
 
   // 4. Prepare data for regression: [[x1, y1], [x2, y2], ...]
@@ -98,7 +120,7 @@ async function getSpendingTrends(period = 'weekly', lookback = null) {
   const stdDev = ss.standardDeviation(spendingValues);
 
   // 8. Build response
-  return {
+  const result = {
     summary: {
       totalSpending: Math.round(aggregated.reduce((sum, d) => sum + d.spending, 0) * 100) / 100,
       averagePerPeriod: Math.round(avgSpending * 100) / 100,
@@ -126,15 +148,28 @@ async function getSpendingTrends(period = 'weekly', lookback = null) {
         start: startDate.toISOString().split('T')[0],
         end: now.toISOString().split('T')[0]
       },
-      periodsAnalyzed: aggregated.length
+      periodsAnalyzed: aggregated.length,
+      cached: false
     }
   };
+
+  // Cache the result
+  await cacheSet(cacheKey, { ...result, meta: { ...result.meta, cached: true } }, CACHE_TTL.SPENDING_TRENDS);
+
+  return result;
 }
 
 /**
  * Get transaction statistics overview
  */
 async function getTransactionStats() {
+  // Check Redis cache first
+  const cacheKey = 'analytics:transaction-stats';
+  const cached = await cacheGet(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const now = new Date();
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -166,7 +201,7 @@ async function getTransactionStats() {
     }
   });
 
-  return {
+  const result = {
     byType: typeCounts.map(t => ({
       type: t.type,
       count: t._count.id,
@@ -174,8 +209,17 @@ async function getTransactionStats() {
     })),
     recentTransactions: recentCount,
     totalPointsInCirculation: totalPoints._sum.pointsCached || 0,
-    pendingRedemptions
+    pendingRedemptions,
+    meta: {
+      generatedAt: now.toISOString(),
+      cached: false
+    }
   };
+
+  // Cache the result
+  await cacheSet(cacheKey, { ...result, meta: { ...result.meta, cached: true } }, CACHE_TTL.TRANSACTION_STATS);
+
+  return result;
 }
 
 /**
