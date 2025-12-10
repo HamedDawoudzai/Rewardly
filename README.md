@@ -459,9 +459,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-### Built with ❤️ by [Hamed Dawoudzai](https://github.com/HamedDawoudzai)
-                      [Brandan Burgess]
-                      [Anuj Sarvate]
+### Built with ❤️ by
+
+[Hamed Dawoudzai](https://github.com/HamedDawoudzai) • [Brandan Burgess](https://github.com/BrandanBurgess) • [Anuj Sarvate](https://github.com/AnujSarvate)
 
 **[⬆ Back to Top](#-rewardly)**
 
