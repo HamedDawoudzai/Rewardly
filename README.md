@@ -26,12 +26,12 @@
 **Rewardly** is a full-stack loyalty points management system designed for businesses to reward customer engagement. Built with scalability and performance in mind, it features role-based access control, real-time analytics with trend analysis, event management, promotional campaigns, and Redis-powered caching.
 
 This project demonstrates production-ready patterns including:
-- 🔐 **JWT Authentication** with hierarchical role-based permissions
-- 📊 **Analytics Engine** with linear regression trend analysis
-- ⚡ **Redis Caching** for high-performance data retrieval (10x faster responses)
-- 🛡️ **Rate Limiting** with distributed Redis-backed storage
-- 📧 **Transactional Emails** via SendGrid integration
-- 🎨 **Modern UI** with dark mode support
+- **JWT Authentication** with hierarchical role-based permissions
+- **Analytics Engine** with linear regression trend analysis
+- **Redis Caching** for high-performance data retrieval (10x faster responses)
+- **Rate Limiting** with distributed Redis-backed storage
+- **Transactional Emails** via SendGrid integration
+- **Modern UI** with dark mode support
 
 ---
 
@@ -69,11 +69,11 @@ Complete transaction lifecycle management supporting multiple transaction types 
 <img src="docs/images/transactions.png" alt="Transactions" width="700"/>
 
 **Transaction Types:**
-- 🛒 **Purchases** - Earn points on spending
-- 🎁 **Redemptions** - Redeem points for rewards
-- ⚖️ **Adjustments** - Manager-initiated point corrections
-- 🔄 **Transfers** - Peer-to-peer point transfers
-- 🎉 **Event Awards** - Points for event attendance
+- **Purchases** - Earn points on spending
+- **Redemptions** - Redeem points for rewards
+- **Adjustments** - Manager-initiated point corrections
+- **Transfers** - Peer-to-peer point transfers
+- **Event Awards** - Points for event attendance
 
 ---
 
@@ -191,7 +191,7 @@ Full dark mode support with automatic system preference detection and manual tog
     └───────────┘                            └─────────────┘
 ```
 
-### 🚀 Redis Caching Strategy
+### Redis Caching Strategy
 
 Redis caching provides **10x faster response times** for frequently accessed data:
 
@@ -279,16 +279,16 @@ All demo accounts use the password: **`pass`**
 
 | Role | Username | Email | Starting Points |
 |------|----------|-------|-----------------|
-| 👑 **Superuser** | `admin` | admin.user@mail.utoronto.ca | 0 |
-| 👔 **Manager** | `manager1` | alice.manager@mail.utoronto.ca | 500 |
-| 👔 **Manager** | `manager2` | bob.manager@mail.utoronto.ca | 300 |
-| 💼 **Cashier** | `cashier1` | carol.cashier@mail.utoronto.ca | 200 |
-| 💼 **Cashier** | `cashier2` | dave.cashier@mail.utoronto.ca | 150 |
-| 👤 **Regular** | `user1` | emma.wilson@mail.utoronto.ca | 5,000 |
-| 👤 **Regular** | `user2` | frank.chen@mail.utoronto.ca | 3,500 |
-| 👤 **Regular** | `user3` | grace.kim@mail.utoronto.ca | 2,000 |
+| **Superuser** | `admin` | admin.user@mail.utoronto.ca | 0 |
+| **Manager** | `manager1` | alice.manager@mail.utoronto.ca | 500 |
+| **Manager** | `manager2` | bob.manager@mail.utoronto.ca | 300 |
+| **Cashier** | `cashier1` | carol.cashier@mail.utoronto.ca | 200 |
+| **Cashier** | `cashier2` | dave.cashier@mail.utoronto.ca | 150 |
+| **Regular** | `user1` | emma.wilson@mail.utoronto.ca | 5,000 |
+| **Regular** | `user2` | frank.chen@mail.utoronto.ca | 3,500 |
+| **Regular** | `user3` | grace.kim@mail.utoronto.ca | 2,000 |
 
-### 🎁 Promo Codes
+### Promo Codes
 
 | Code | Bonus Points | Description |
 |------|--------------|-------------|
@@ -459,7 +459,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-### Built with ❤️ by [Hamed Dawoudzai](https://github.com/HamedDawoudzai)
+### Built with ❤️ by
+
+[Hamed Dawoudzai](https://github.com/HamedDawoudzai) • [Brandan Burgess](https://github.com/BrandanBurgess) • [Anuj Sarvate](https://github.com/AnujSarvate)
 
 **[⬆ Back to Top](#-rewardly)**
 
